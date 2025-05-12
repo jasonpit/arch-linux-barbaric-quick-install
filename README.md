@@ -39,6 +39,8 @@ curl -L https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-ins
 
 ---
 
+## When the sctip it done, reboot, remove install media. - All set 
+
 ## What It Installs
 
 * **Base system:** Arch Linux, Linux kernel, firmware
@@ -64,15 +66,6 @@ During execution, you’ll be prompted for:
 * Building an audio-focused Linux workstation
 * VM-based plugin testing environments
 * Rapid setup for live performance rigs or headless synth systems
-
----
-
-##  Next Steps
-
-Once installed, you can:
-
-* SSH into your system using the IP assigned
-* Start installing your favorite audio tools like Carla, JACK-aware plugins, DAWs, etc.
 
 ---
 
