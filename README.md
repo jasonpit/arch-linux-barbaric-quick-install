@@ -4,7 +4,7 @@ This script automates the installation of a clean, headless Arch Linux system, s
 
 ---
 
-## 🚀 Features
+##  Features
 
 * Fully automated disk partitioning (wipes primary drive)
 * Installs Arch Linux with:
@@ -19,21 +19,21 @@ This script automates the installation of a clean, headless Arch Linux system, s
 
 ---
 
-## 🛠️ Usage
+## Usage
 
 You can run this script directly from an Arch Linux live ISO environment (e.g. via SSH into a live Arch session or on the local console).
 
 ### One-liner (from Arch ISO):
 
 ```bash
-curl -L https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/main/install.sh | bash
+USERNAME=myuser PASSWORD=mypass HOSTNAME=machine curl -L https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/install.sh | bash
 ```
 
-> ⚠️ **WARNING:** This script will erase the entire primary disk on the system without confirmation unless modified. Use on dedicated systems or test environments only.
+> **WARNING:** This script will erase the entire primary disk on the system without confirmation unless modified. Use on dedicated systems or test environments only.
 
 ---
 
-## 📦 What It Installs
+## What It Installs
 
 * **Base system:** Arch Linux, Linux kernel, firmware
 * **Audio stack:** PipeWire, pipewire-jack, WirePlumber
@@ -43,7 +43,7 @@ curl -L https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-ins
 
 ---
 
-## 👤 Interactive Prompts
+##  Interactive Prompts
 
 During execution, you’ll be prompted for:
 
@@ -53,7 +53,7 @@ During execution, you’ll be prompted for:
 
 ---
 
-## 🧪 Recommended Use Cases
+##  Recommended Use Cases
 
 * Building an audio-focused Linux workstation
 * VM-based plugin testing environments
@@ -61,7 +61,7 @@ During execution, you’ll be prompted for:
 
 ---
 
-## 💡 Next Steps
+##  Next Steps
 
 Once installed, you can:
 
@@ -70,12 +70,12 @@ Once installed, you can:
 
 ---
 
-## 📋 License
+##  License
 
 MIT License — use, adapt, and destroy your drives responsibly.
 
 ---
 
-## 🧰 Credits
+##  Credits
 
 Inspired by the needs of real-time, headless audio engineers who want to avoid the noise and get straight to the signal.

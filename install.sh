@@ -3,11 +3,14 @@
 
 set -euo pipefail
 
+export DEBIAN_FRONTEND=noninteractive
+
 # === Prompt for Configuration ===
 echo "[*] Starting NodeOS Arch install script"
-read -rp "Enter desired hostname: " HOSTNAME
-read -rp "Enter new username: " USERNAME
-read -rsp "Enter password for user/root: " PASSWORD
+HOSTNAME="${HOSTNAME:-archaudio}"
+USERNAME="${USERNAME:-audioadmin}"
+PASSWORD="${PASSWORD:-supersecure}"
+echo "[*] Using HOSTNAME=$HOSTNAME, USERNAME=$USERNAME"
 
 # === Disk Detection ===
 DISK="/dev/$(lsblk -dno NAME | grep -E '^sd|^vd|^nvme' | head -n 1)"
@@ -76,4 +79,5 @@ EOF
 # === Done ===
 echo "[*] Install complete. You can now reboot into your new system."
 echo "SSH will be available at the same IP as the installer."
-echo "Login: $USERNAME / $PASSWORD"
+echo "Login: $USERNAME (password: $PASSWORD)"
+echo "You can override defaults using environment variables: HOSTNAME, USERNAME, PASSWORD"
