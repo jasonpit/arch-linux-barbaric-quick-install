@@ -28,9 +28,13 @@ Once you are at the archiso prompt you can run passwd to set a password and then
 
 ```bash
 USERNAME=myuser PASSWORD=mypass HOSTNAME=machine curl -L https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/install.sh | bash
-or adhere to defualts curl -L https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/install.sh | bash
 ```
 
+Or adhere to the defualts with no variables for HOSTNAME, USERNAME, PASSWORD
+
+```bash
+curl -L https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/install.sh | bash
+```
 > **WARNING:** This script will erase the entire primary disk on the system without confirmation unless modified. Use on dedicated systems or test environments only.
 
 ---
