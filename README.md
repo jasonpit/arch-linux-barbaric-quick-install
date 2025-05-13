@@ -27,10 +27,12 @@ Once you are at the archiso prompt you can run passwd to set a password and then
 ### One-liner (from Arch ISO):
 
 ```bash
-USERNAME=myuser PASSWORD=mypass HOSTNAME=machine curl -L https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/install.sh | bash
+curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/install.sh \
+  && chmod +x install.sh \
+  && USERNAME=myuser PASSWORD=mypass HOSTNAME=machine ./install.sh
 ```
 
-Or adhere to the defualts with no variables for HOSTNAME, USERNAME, PASSWORD
+Or adhere to the defualts with no variables for HOSTNAME archiso, USERNAME audioadmin, PASSWORD supersecure
 
 ```bash
 curl -L https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/install.sh | bash
