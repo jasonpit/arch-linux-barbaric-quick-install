@@ -25,10 +25,18 @@ You can run this script directly from an Arch Linux live ISO environment (e.g. v
 Once you are at the archiso prompt you can run passwd to set a password and then ip a to get IP addres. then SSH into the installer from another system on your network to make things easier.
 
 ### Download and run the script (from Arch ISO):
-
+### From archiso, just run
 ```bash
-curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/arch_full_autoinstall.sh
+curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/main/phase1.sh
+chmod +x phase1.sh
+./phase1.sh
 ```
+### After reboot:
+```bash
+bash /mnt/phase2.sh
+```
+
+
 > **WARNING:** This script will erase the entire primary disk on the system without confirmation unless modified. Use on dedicated systems or test environments only.
 
 ---
