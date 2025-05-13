@@ -24,10 +24,10 @@ This script automates the installation of a clean, headless Arch Linux system, s
 You can run this script directly from an Arch Linux live ISO environment (e.g. via SSH into a live Arch session or on the local console).
 Once you are at the archiso prompt you can run passwd to set a password and then ip a to get IP addres. then SSH into the installer from another system on your network to make things easier.
 
-### One-liner (from Arch ISO):
+### Download and run the script (from Arch ISO):
 
 ```bash
-curl -L https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/arch_full_autoinstall | bash
+curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/arch_full_autoinstall.sh
 ```
 > **WARNING:** This script will erase the entire primary disk on the system without confirmation unless modified. Use on dedicated systems or test environments only.
 
