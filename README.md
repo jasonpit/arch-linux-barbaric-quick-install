@@ -27,13 +27,7 @@ Once you are at the archiso prompt you can run passwd to set a password and then
 ### Download and run the script (from Arch ISO):
 ### From archiso, just run
 ```bash
-curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/main/phase1.sh
-chmod +x phase1.sh
-./phase1.sh
-```
-### After reboot:
-```bash
-bash /mnt/phase2.sh
+bash <(curl -sL https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/main/arch_full_autoinstall.sh)
 ```
 
 

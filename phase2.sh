@@ -1,45 +1,34 @@
 #!/bin/bash
 set -e
 
-### CONFIG
-DISK="/dev/sda"
-HOSTNAME="arch"
-USERNAME="archadmin"
-PASSWORD="SuperSecurePassword123!"
-TIMEZONE="America/Los_Angeles"
-LOCALE="en_US.UTF-8"
-KEYMAP="us"
+echo "[*] Running Phase 2 config..."
 
-echo "[*] Mounting root partition..."
-mount "${DISK}1" /mnt
-
-echo "[*] Installing base system..."
-pacstrap /mnt base linux linux-firmware vim sudo openssh networkmanager pipewire pipewire-alsa pipewire-jack wireplumber jack-example-tools
-
-echo "[*] Generating fstab..."
-genfstab -U /mnt >> /mnt/etc/fstab
-
-echo "[*] Setting up system config..."
-arch-chroot /mnt /bin/bash <<EOF
-ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+# Set up hostname, timezone, locales
+echo "arch" > /etc/hostname
+ln -sf /usr/share/zoneinfo/America/Los_Angeles /etc/localtime
 hwclock --systohc
-
-echo "$LOCALE UTF-8" > /etc/locale.gen
+echo "en_US.UTF-8 UTF-8" > /etc/locale.gen
 locale-gen
-echo "LANG=$LOCALE" > /etc/locale.conf
-echo "KEYMAP=$KEYMAP" > /etc/vconsole.conf
-echo "$HOSTNAME" > /etc/hostname
+echo "LANG=en_US.UTF-8" > /etc/locale.conf
 
-echo "[*] Creating user $USERNAME..."
-useradd -m -G wheel,audio -s /bin/bash "$USERNAME"
-echo "$USERNAME:$PASSWORD" | chpasswd
-echo "root:$PASSWORD" | chpasswd
+# Create user
+useradd -m -G wheel,audio,video -s /bin/bash archadmin
+echo "archadmin:SuperSecurePassword123!" | chpasswd
+echo "root:SuperSecurePassword123!" | chpasswd
 
-echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
-chmod 440 /etc/sudoers.d/wheel
+# Allow wheel group sudo
+sed -i 's/^# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/' /etc/sudoers
 
+# Install essentials
+pacman -Sy --noconfirm openssh vim git base-devel pipewire pipewire-pulse wireplumber sudo
+
+# Enable SSH
 systemctl enable sshd
-systemctl enable NetworkManager
-EOF
 
-echo "[*] Installation complete! You can reboot now."
+# Enable pipewire services (optional)
+systemctl enable --user pipewire
+systemctl enable --user wireplumber
+
+# Cleanup
+rm /root/.bash_profile  # prevent script from re-running
+echo "[*] Phase 2 complete. Reboot recommended."
