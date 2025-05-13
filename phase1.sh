@@ -18,7 +18,9 @@ echo "[*] Installing base system..."
 pacstrap -K /mnt base linux linux-firmware sudo vim openssh
 
 echo "[*] Generating fstab..."
+mkdir -p /mnt/etc
 genfstab -U /mnt >> /mnt/etc/fstab
+
 
 echo "[*] Downloading Phase 2 setup script..."
 curl -sL https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/phase2.sh -o /mnt/phase2.sh
