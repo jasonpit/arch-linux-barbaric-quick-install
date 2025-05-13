@@ -69,6 +69,7 @@ sed -i 's/^# %wheel ALL=(ALL) ALL/%wheel ALL=(ALL) ALL/' /etc/sudoers
 
 systemctl enable NetworkManager
 systemctl enable sshd
+systemctl start sshd
 
 # === Install GRUB Bootloader ===
 grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB

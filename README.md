@@ -32,7 +32,7 @@ curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-in
   && USERNAME=myuser PASSWORD=mypass HOSTNAME=machine ./install.sh
 ```
 
-Or adhere to the defualts with no variables for HOSTNAME archiso, USERNAME audioadmin, PASSWORD supersecure
+Or adhere to the defualts with no variables for HOSTNAME archaudio, USERNAME audioadmin, PASSWORD supersecure
 
 ```bash
 curl -L https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/install.sh | bash
