@@ -27,15 +27,7 @@ Once you are at the archiso prompt you can run passwd to set a password and then
 ### One-liner (from Arch ISO):
 
 ```bash
-curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/install.sh \
-  && chmod +x install.sh \
-  && USERNAME=myuser PASSWORD=mypass HOSTNAME=machine ./install.sh
-```
-
-Or adhere to the defualts with no variables for HOSTNAME archaudio, USERNAME audioadmin, PASSWORD supersecure
-
-```bash
-curl -L https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/install.sh | bash
+curl -L https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/arch_full_autoinstall | bash
 ```
 > **WARNING:** This script will erase the entire primary disk on the system without confirmation unless modified. Use on dedicated systems or test environments only.
 
