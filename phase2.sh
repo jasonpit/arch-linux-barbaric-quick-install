@@ -1,80 +1,89 @@
 #!/bin/bash
-set -e
 
-# === CONFIG ===
-HOSTNAME="arch"
-USERNAME="archadmin"
-PASSWORD="SuperSecurePassword123!"
-TIMEZONE="America/Los_Angeles"
-LOCALE="en_US.UTF-8"
-KEYMAP="us"
-SSH_KEY_FILE="/tmp/ssh_key.pub"
+set -euo pipefail
 
-echo "[*] Setting timezone..."
-ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
-hwclock --systohc
+log="/mnt/install.log"
+exec > >(tee -a "$log") 2>&1
 
-echo "[*] Setting locale..."
-echo "$LOCALE UTF-8" > /etc/locale.gen
-locale-gen
-echo "LANG=$LOCALE" > /etc/locale.conf
-echo "KEYMAP=$KEYMAP" > /etc/vconsole.conf
+# Detect root partition
+root_disk=$(lsblk -dn -o NAME,TYPE | awk '$2 == "disk" {print $1}' | head -n1)
+root_dev="/dev/$root_disk"
+root_part="${root_dev}1"
 
-echo "[*] Setting hostname..."
-echo "$HOSTNAME" > /etc/hostname
-cat <<EOF > /etc/hosts
-127.0.0.1 localhost
-::1       localhost
-127.0.1.1 $HOSTNAME.localdomain $HOSTNAME
-EOF
+# Mount everything
+mount "$root_part" /mnt
+swapon /mnt/swapfile || echo "No swapfile found; skipping swap."
 
-echo "[*] Creating user $USERNAME..."
-useradd -m -G wheel,audio -s /bin/bash $USERNAME
-echo "$USERNAME:$PASSWORD" | chpasswd
-echo "root:$PASSWORD" | chpasswd
+# Set timezone and localization
+arch-chroot /mnt ln -sf /usr/share/zoneinfo/UTC /etc/localtime
+arch-chroot /mnt hwclock --systohc
+arch-chroot /mnt sed -i 's/^#en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen
+arch-chroot /mnt locale-gen
+arch-chroot /mnt bash -c 'echo "LANG=en_US.UTF-8" > /etc/locale.conf'
 
-echo "[*] Enabling sudo for wheel group..."
-sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+# Generate dynamic hostname from MAC or fallback to "arch"
+MAC=$(cat /sys/class/net/*/address | grep -v 00:00:00 | head -n1)
+HOSTNAME=${MAC//:/}
+HOSTNAME="arch-${HOSTNAME:0:6}"
+arch-chroot /mnt bash -c "echo \"$HOSTNAME\" > /etc/hostname"
 
-# === Inject SSH key if provided ===
-if [[ -f /root/.sshkey.tmp ]]; then
-  mkdir -p /home/$USERNAME/.ssh
-  mv /root/.sshkey.tmp /home/$USERNAME/.ssh/authorized_keys
-  chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
-  chmod 700 /home/$USERNAME/.ssh
-  chmod 600 /home/$USERNAME/.ssh/authorized_keys
+# Configure hosts
+arch-chroot /mnt bash -c "cat <<EOF > /etc/hosts
+127.0.0.1	localhost
+::1		localhost
+127.0.1.1	$HOSTNAME.localdomain	$HOSTNAME
+EOF"
+
+# Set root password
+arch-chroot /mnt bash -c "echo root:SuperSecurePW123! | chpasswd"
+
+# Create default user with realtime + sudo
+arch-chroot /mnt useradd -m -G wheel,audio,video,optical,storage,realtime -s /bin/bash archadmin
+arch-chroot /mnt bash -c "echo archadmin:SuperSecurePW123! | chpasswd"
+arch-chroot /mnt sed -i '/%wheel ALL=(ALL:ALL) ALL/s/^# //' /etc/sudoers
+
+# Optionally inject SSH key
+echo "[*] If you want to add your SSH public key, paste it now. Leave blank to skip:"
+read -rp "Enter SSH public key: " SSH_KEY
+if [[ -n "$SSH_KEY" ]]; then
+    arch-chroot /mnt bash -c "mkdir -p /home/archadmin/.ssh && echo '$SSH_KEY' >> /home/archadmin/.ssh/authorized_keys && chown -R archadmin:archadmin /home/archadmin/.ssh"
 fi
 
-echo "[*] Enabling SSH..."
-systemctl enable sshd
+# Install packages
+arch-chroot /mnt pacman --noconfirm -Sy \
+  networkmanager \
+  openssh \
+  sudo \
+  vim \
+  git \
+  base-devel \
+  linux-headers \
+  pipewire pipewire-alsa pipewire-pulse pipewire-jack \
+  wireplumber \
+  jack-example-tools \
+  zram-generator || true
 
-# Optional: Setup SSH key if provided
-if [[ -f "$SSH_KEY_FILE" ]]; then
-  echo "[*] Setting up SSH public key..."
-  mkdir -p /home/$USERNAME/.ssh
-  cp "$SSH_KEY_FILE" /home/$USERNAME/.ssh/authorized_keys
-  chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
-  chmod 700 /home/$USERNAME/.ssh
-  chmod 600 /home/$USERNAME/.ssh/authorized_keys
+# Enable services
+arch-chroot /mnt systemctl enable NetworkManager
+arch-chroot /mnt systemctl enable sshd
+
+# User services - create persistent overrides to auto-enable if needed
+arch-chroot /mnt bash -c "loginctl enable-linger archadmin"
+arch-chroot /mnt -u archadmin systemctl --user enable pipewire-pulse
+arch-chroot /mnt -u archadmin systemctl --user enable wireplumber
+
+# Optionally setup ZRAM if swapfile not desired
+echo "[*] Would you like to enable ZRAM instead of disk swap? (y/N)"
+read -rn 1 ENABLE_ZRAM
+echo
+if [[ "$ENABLE_ZRAM" =~ [Yy] ]]; then
+  arch-chroot /mnt bash -c 'cat <<EOF > /etc/systemd/zram-generator.conf
+[zram0]
+zram-size = ram / 2
+EOF'
+  arch-chroot /mnt rm -f /swapfile
 fi
 
-# === Install Bootloader ===
-echo "[*] Installing GRUB bootloader..."
-boot_mode="bios"
-if [ -d /sys/firmware/efi ]; then
-  boot_mode="uefi"
-  echo "[*] UEFI mode detected"
-  pacman -Sy --noconfirm grub efibootmgr dosfstools os-prober mtools
-  mkdir -p /boot/efi
-  mount $(lsblk -rpno NAME,TYPE | grep part | head -n1) /boot/efi || true
-  grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=GRUB
-else
-  echo "[*] BIOS mode detected"
-  pacman -Sy --noconfirm grub
-  grub-install --target=i386-pc /dev/sda
-fi
-
-echo "[*] Generating GRUB config..."
-grub-mkconfig -o /boot/grub/grub.cfg
-
-echo "[*] Done. You can now reboot."
+echo "[✓] Phase 2 complete. Cleaning up..."
+umount -R /mnt || true
+reboot
