@@ -1,89 +1,39 @@
 #!/bin/bash
-
 set -euo pipefail
 
-log="/mnt/install.log"
-exec > >(tee -a "$log") 2>&1
+# === Mount root partition ===
+mountpoint -q /mnt || mount $(lsblk -lnpo NAME,TYPE | grep part | awk '{print $1}' | head -n1) /mnt
 
-# Detect root partition
-root_disk=$(lsblk -dn -o NAME,TYPE | awk '$2 == "disk" {print $1}' | head -n1)
-root_dev="/dev/$root_disk"
-root_part="${root_dev}1"
+arch-chroot /mnt /bin/bash <<'EOF'
+set -euo pipefail
 
-# Mount everything
-mount "$root_part" /mnt
-swapon /mnt/swapfile || echo "No swapfile found; skipping swap."
+USERNAME="archadmin"
+PASSWORD="SuperSecurePW123!"
 
-# Set timezone and localization
-arch-chroot /mnt ln -sf /usr/share/zoneinfo/UTC /etc/localtime
-arch-chroot /mnt hwclock --systohc
-arch-chroot /mnt sed -i 's/^#en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen
-arch-chroot /mnt locale-gen
-arch-chroot /mnt bash -c 'echo "LANG=en_US.UTF-8" > /etc/locale.conf'
+# Create user with sudo
+useradd -m -G wheel,audio -s /bin/bash $USERNAME || true
+echo "$USERNAME:$PASSWORD" | chpasswd
 
-# Generate dynamic hostname from MAC or fallback to "arch"
-MAC=$(cat /sys/class/net/*/address | grep -v 00:00:00 | head -n1)
-HOSTNAME=${MAC//:/}
-HOSTNAME="arch-${HOSTNAME:0:6}"
-arch-chroot /mnt bash -c "echo \"$HOSTNAME\" > /etc/hostname"
-
-# Configure hosts
-arch-chroot /mnt bash -c "cat <<EOF > /etc/hosts
-127.0.0.1	localhost
-::1		localhost
-127.0.1.1	$HOSTNAME.localdomain	$HOSTNAME
-EOF"
-
-# Set root password
-arch-chroot /mnt bash -c "echo root:SuperSecurePW123! | chpasswd"
-
-# Create default user with realtime + sudo
-arch-chroot /mnt useradd -m -G wheel,audio,video,optical,storage,realtime -s /bin/bash archadmin
-arch-chroot /mnt bash -c "echo archadmin:SuperSecurePW123! | chpasswd"
-arch-chroot /mnt sed -i '/%wheel ALL=(ALL:ALL) ALL/s/^# //' /etc/sudoers
-
-# Optionally inject SSH key
-echo "[*] If you want to add your SSH public key, paste it now. Leave blank to skip:"
-read -rp "Enter SSH public key: " SSH_KEY
-if [[ -n "$SSH_KEY" ]]; then
-    arch-chroot /mnt bash -c "mkdir -p /home/archadmin/.ssh && echo '$SSH_KEY' >> /home/archadmin/.ssh/authorized_keys && chown -R archadmin:archadmin /home/archadmin/.ssh"
-fi
-
-# Install packages
-arch-chroot /mnt pacman --noconfirm -Sy \
-  networkmanager \
-  openssh \
-  sudo \
-  vim \
-  git \
-  base-devel \
-  linux-headers \
-  pipewire pipewire-alsa pipewire-pulse pipewire-jack \
-  wireplumber \
-  jack-example-tools \
-  zram-generator || true
+# Enable sudo
+echo "%wheel ALL=(ALL) ALL" > /etc/sudoers.d/99_wheel
 
 # Enable services
-arch-chroot /mnt systemctl enable NetworkManager
-arch-chroot /mnt systemctl enable sshd
+systemctl enable sshd
+loginctl enable-linger $USERNAME
 
-# User services - create persistent overrides to auto-enable if needed
-arch-chroot /mnt bash -c "loginctl enable-linger archadmin"
-arch-chroot /mnt -u archadmin systemctl --user enable pipewire-pulse
-arch-chroot /mnt -u archadmin systemctl --user enable wireplumber
+# Install real-time audio dependencies
+pacman -Sy --noconfirm pipewire pipewire-alsa pipewire-pulse wireplumber realtime-privileges
+usermod -aG realtime $USERNAME
 
-# Optionally setup ZRAM if swapfile not desired
-echo "[*] Would you like to enable ZRAM instead of disk swap? (y/N)"
-read -rn 1 ENABLE_ZRAM
-echo
-if [[ "$ENABLE_ZRAM" =~ [Yy] ]]; then
-  arch-chroot /mnt bash -c 'cat <<EOF > /etc/systemd/zram-generator.conf
-[zram0]
-zram-size = ram / 2
-EOF'
-  arch-chroot /mnt rm -f /swapfile
+# Setup SSH key if present
+if [[ -f /root/ssh_key.pub ]]; then
+  mkdir -p /home/$USERNAME/.ssh
+  cp /root/ssh_key.pub /home/$USERNAME/.ssh/authorized_keys
+  chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
+  chmod 600 /home/$USERNAME/.ssh/authorized_keys
+  rm /root/ssh_key.pub
 fi
 
-echo "[✓] Phase 2 complete. Cleaning up..."
-umount -R /mnt || true
-reboot
+EOF
+
+echo "[✓] Phase 2 completed. You may now login as 'archadmin'"
