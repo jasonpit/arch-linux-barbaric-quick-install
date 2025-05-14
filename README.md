@@ -42,7 +42,7 @@ Ensure you have network connectivity.
 ### 2. Run Phase 1 Script
 
 ```bash
-curl -LO https://raw.githubusercontent.com/<your-username>/<repo>/main/phase1.sh
+bash <(curl -sL https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/main/arch_full_autoinstall.sh)
 chmod +x phase1.sh
 ./phase1.sh
 ````
