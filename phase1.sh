@@ -1,66 +1,77 @@
 #!/bin/bash
+
 set -euo pipefail
 
-DISK="/dev/sda"
-LOG="/mnt/install.log"
+# === CONFIG ===
+HOSTNAME="arch"
+USERNAME="archadmin"
+PASSWORD="SuperSecurePassword123!"
+TIMEZONE="America/Los_Angeles"
+LOCALE="en_US.UTF-8"
+KEYMAP="us"
+SWAP_SIZE="2G"  # Set to "0" or empty to disable swap
 
+# === Detect disk ===
 echo "[*] Detecting primary disk..."
-for candidate in /dev/nvme0n1 /dev/vda /dev/sda; do
-  if [ -b "$candidate" ]; then
-    DISK="$candidate"
-    break
-  fi
-done
-
+DISK=$(lsblk -ndo NAME,TYPE | awk '$2=="disk" {print "/dev/"$1; exit}')
 echo "[+] Using disk: $DISK"
+
+# === Ask for SSH Key ===
+echo -n "Paste your SSH public key (or leave blank to skip): "
+read -r SSH_KEY
+
+# === WIPE & PARTITION ===
 echo "[*] Wiping $DISK and creating partitions..."
+sgdisk --zap-all $DISK
+sgdisk -n 1:0:+512M -t 1:ef00 -c 1:"EFI System" $DISK
+sgdisk -n 2:0:0 -t 2:8300 -c 2:"Linux filesystem" $DISK
 
-# Wipe disk
-sgdisk --zap-all "$DISK"
-sgdisk -o "$DISK"
+EFI_PART="${DISK}1"
+ROOT_PART="${DISK}2"
 
-# Create single root partition
-sgdisk -n 1:0:0 -t 1:8300 "$DISK"
+mkfs.vfat -F32 $EFI_PART
+mkfs.ext4 -L rootfs $ROOT_PART
 
-# Reload partition table
-partprobe "$DISK"
-sleep 2
+# === MOUNT ===
+echo "[*] Mounting root partition..."
+mount $ROOT_PART /mnt
+mkdir -p /mnt/boot/efi
+mount $EFI_PART /mnt/boot/efi
 
-ROOT="${DISK}1"
-mkfs.ext4 "$ROOT" -L rootfs
-mount "$ROOT" /mnt
+# === OPTIONAL SWAP ===
+if [[ -n "$SWAP_SIZE" && "$SWAP_SIZE" != "0" ]]; then
+  echo "[*] Creating swapfile..."
+  fallocate -l $SWAP_SIZE /mnt/swapfile
+  chmod 600 /mnt/swapfile
+  mkswap /mnt/swapfile
+  swapon /mnt/swapfile
+fi
 
-echo "[*] Creating swapfile..."
-fallocate -l 2G /mnt/swapfile
-chmod 600 /mnt/swapfile
-mkswap /mnt/swapfile
-swapon /mnt/swapfile
-
-# Write fstab
-mkdir -p /mnt/etc
-genfstab -U /mnt >> /mnt/etc/fstab
-
+# === BASE INSTALL ===
 echo "[*] Installing base system..."
-pacstrap -K /mnt base linux linux-firmware openssh sudo vim > "$LOG" 2>&1
+pacstrap /mnt base linux linux-firmware sudo vim openssh
 
+# === FSTAB ===
 echo "[*] Generating fstab..."
 genfstab -U /mnt >> /mnt/etc/fstab
 
+# === Download Phase 2 ===
 echo "[*] Downloading Phase 2 setup script..."
 curl -sL https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/phase2.sh -o /mnt/phase2.sh
 chmod +x /mnt/phase2.sh
 
+# === Auto-run Phase 2 after chroot ===
 echo "[*] Setting auto-run of Phase 2 on first login..."
-mkdir -p /mnt/root
-echo 'bash /phase2.sh' >> /mnt/root/.bash_profile
+echo 'bash /phase2.sh && rm /phase2.sh' >> /mnt/root/.bash_profile
 
-read -rp "Paste your SSH public key (or leave blank to skip): " SSHKEY
-if [[ -n "$SSHKEY" ]]; then
-  mkdir -p /mnt/root/.ssh
-  echo "$SSHKEY" > /mnt/root/.ssh/authorized_keys
-  chmod 700 /mnt/root/.ssh
-  chmod 600 /mnt/root/.ssh/authorized_keys
+# === Store SSH key if provided ===
+if [[ -n "$SSH_KEY" ]]; then
+  mkdir -p /mnt/home/$USERNAME/.ssh
+  echo "$SSH_KEY" > /mnt/home/$USERNAME/.ssh/authorized_keys
+  chmod 700 /mnt/home/$USERNAME/.ssh
+  chmod 600 /mnt/home/$USERNAME/.ssh/authorized_keys
 fi
 
+# === DONE ===
 echo "[!] Rebooting to apply partition table. After reboot, run manually if needed:"
 echo "    bash /mnt/phase2.sh"
