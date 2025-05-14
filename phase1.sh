@@ -66,10 +66,7 @@ echo 'bash /phase2.sh && rm /phase2.sh' >> /mnt/root/.bash_profile
 
 # === Store SSH key if provided ===
 if [[ -n "$SSH_KEY" ]]; then
-  mkdir -p /mnt/home/$USERNAME/.ssh
-  echo "$SSH_KEY" > /mnt/home/$USERNAME/.ssh/authorized_keys
-  chmod 700 /mnt/home/$USERNAME/.ssh
-  chmod 600 /mnt/home/$USERNAME/.ssh/authorized_keys
+  echo "$SSH_KEY" > /mnt/root/.sshkey.tmp
 fi
 
 # === DONE ===

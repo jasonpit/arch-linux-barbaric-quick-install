@@ -36,6 +36,15 @@ echo "root:$PASSWORD" | chpasswd
 echo "[*] Enabling sudo for wheel group..."
 sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 
+# === Inject SSH key if provided ===
+if [[ -f /root/.sshkey.tmp ]]; then
+  mkdir -p /home/$USERNAME/.ssh
+  mv /root/.sshkey.tmp /home/$USERNAME/.ssh/authorized_keys
+  chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
+  chmod 700 /home/$USERNAME/.ssh
+  chmod 600 /home/$USERNAME/.ssh/authorized_keys
+fi
+
 echo "[*] Enabling SSH..."
 systemctl enable sshd
 
