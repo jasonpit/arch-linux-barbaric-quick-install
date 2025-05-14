@@ -1,39 +1,31 @@
 #!/bin/bash
 set -euo pipefail
 
-# === Mount root partition ===
-mountpoint -q /mnt || mount $(lsblk -lnpo NAME,TYPE | grep part | awk '{print $1}' | head -n1) /mnt
+echo "[*] Configuring Arch system..."
 
-arch-chroot /mnt /bin/bash <<'EOF'
-set -euo pipefail
+arch-chroot /mnt /bin/bash <<EOF
+ln -sf /usr/share/zoneinfo/UTC /etc/localtime
+hwclock --systohc
+sed -i 's/#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+locale-gen
+echo "LANG=en_US.UTF-8" > /etc/locale.conf
+echo "arch" > /etc/hostname
 
-USERNAME="archadmin"
-PASSWORD="SuperSecurePW123!"
+# Setup hosts
+cat <<HOSTS > /etc/hosts
+127.0.0.1   localhost
+::1         localhost
+127.0.1.1   arch.localdomain arch
+HOSTS
 
-# Create user with sudo
-useradd -m -G wheel,audio -s /bin/bash $USERNAME || true
-echo "$USERNAME:$PASSWORD" | chpasswd
-
-# Enable sudo
-echo "%wheel ALL=(ALL) ALL" > /etc/sudoers.d/99_wheel
+# Create user
+useradd -m -G wheel,audio -s /bin/bash archadmin
+echo "archadmin:supersecure" | chpasswd
+echo "root:supersecure" | chpasswd
+echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/wheel
 
 # Enable services
 systemctl enable sshd
-loginctl enable-linger $USERNAME
-
-# Install real-time audio dependencies
-pacman -Sy --noconfirm pipewire pipewire-alsa pipewire-pulse wireplumber realtime-privileges
-usermod -aG realtime $USERNAME
-
-# Setup SSH key if present
-if [[ -f /root/ssh_key.pub ]]; then
-  mkdir -p /home/$USERNAME/.ssh
-  cp /root/ssh_key.pub /home/$USERNAME/.ssh/authorized_keys
-  chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
-  chmod 600 /home/$USERNAME/.ssh/authorized_keys
-  rm /root/ssh_key.pub
-fi
-
 EOF
 
-echo "[✓] Phase 2 completed. You may now login as 'archadmin'"
+echo "[+] Phase 2 complete. Please reboot."
