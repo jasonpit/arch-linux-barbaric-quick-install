@@ -1,76 +1,98 @@
-# Arch Linux Audio Workstation Auto-Installer
 
-This script automates the installation of a clean, headless Arch Linux system, specifically tuned as a base for professional audio development and engineering environments. It is designed for fast deployment on virtual machines, laptops, or desktops, assuming the system will be fully dedicated to Linux audio workflows.
+# Arch Linux Automated Installation (2-Phase Setup)
 
----
-
-##  Features
-
-* Fully automated disk partitioning (wipes primary drive)
-* Installs Arch Linux with:
-
-  * PipeWire with JACK support
-  * NetworkManager for wired/wireless switching
-  * SSH server and sudo preconfigured
-  * Git, Vim, Zsh, and base tools
-* Prompts for custom hostname, user, and password
-* Installs GRUB bootloader with UEFI support
-* Works on both virtual machines and real hardware (desktop/laptop)
+This repository contains a fully automated 2-phase installer for Arch Linux. It is designed for quick provisioning of a minimal yet powerful Arch system, optimized for DSP and networked audio environments.
 
 ---
 
-## Usage
+## 🚀 Overview
 
-You can run this script directly from an Arch Linux live ISO environment (e.g. via SSH into a live Arch session or on the local console).
-Once you are at the archiso prompt you can run passwd to set a password and then ip a to get IP addres. then SSH into the installer from another system on your network to make things easier.
+This installation is broken into two distinct phases:
 
-### Download and run the script (from Arch ISO):
-### From archiso, just run
+- **Phase 1: `phase1.sh`**
+  - Automatically detects root disk (`nvme0n1`, `vda`, or `sda`)
+  - Wipes and formats disk
+  - Optionally configures ZRAM or swapfile
+  - Installs base Arch system with essential packages
+  - Prompts for SSH key injection
+  - Prepares and installs the `phase2.sh` script
+  - Reboots into new system
+
+- **Phase 2: `phase2.sh`**
+  - Finalizes system configuration via `arch-chroot`
+  - Sets timezone, locale, hostname (MAC-based)
+  - Creates default user `archadmin` with sudo and realtime permissions
+  - Installs network, audio, and development packages
+  - Optionally enables ZRAM via `zram-generator`
+  - Enables user linger + systemd audio services
+  - Reboots into final system
+
+---
+
+## 🔧 Usage
+
+### 1. Boot into Arch ISO
+
+Start an Arch ISO via UTM, USB, or PXE boot.
+
+Login as `root`.
+
+Ensure you have network connectivity.
+
+### 2. Run Phase 1 Script
+
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/main/arch_full_autoinstall.sh)
-```
+curl -LO https://raw.githubusercontent.com/<your-username>/<repo>/main/phase1.sh
+chmod +x phase1.sh
+./phase1.sh
+````
 
+* You will be prompted to paste your **SSH public key** (optional).
+* Script installs base system, prepares Phase 2, and reboots.
 
-> **WARNING:** This script will erase the entire primary disk on the system without confirmation unless modified. Use on dedicated systems or test environments only.
+### 3. After Reboot: Phase 2 Automatically Runs
 
----
+* Final configurations apply automatically.
+* You’ll be asked for:
 
-## When the sctip it done, reboot, remove install media. - All set 
-
-## What It Installs
-
-* **Base system:** Arch Linux, Linux kernel, firmware
-* **Audio stack:** PipeWire, pipewire-jack, WirePlumber
-* **Networking:** NetworkManager with automatic wired/wireless support
-* **Developer tools:** git, zsh, vim
-* **System services:** openssh, sudo, GRUB (EFI bootloader)
+  * SSH key injection (optional)
+  * Whether to use ZRAM instead of a swapfile (recommended for flash/NVMe)
 
 ---
 
-##  Interactive Prompts
+## 🧠 Features
 
-During execution, you’ll be prompted for:
-
-* Hostname
-* Username
-* Password (used for both root and user account)
-
----
-
-##  Recommended Use Cases
-
-* Building an audio-focused Linux workstation
-* VM-based plugin testing environments
-* Rapid setup for live performance rigs or headless synth systems
+* Dynamic disk detection (`nvme0n1`, `vda`, `sda`)
+* ZRAM or disk swap
+* MAC-based hostname generation
+* Secure user creation (`archadmin`)
+* Audio stack: PipeWire + JACK + Realtime
+* Network-ready: `NetworkManager`, `openssh`
+* Persistent user service enabling
+* Logs saved to `/mnt/install.log` (Phase 1 only)
 
 ---
 
-##  License
+## 🔐 Default Credentials
 
-MIT License — use, adapt, and destroy your drives responsibly.
+* **User:** `archadmin`
+* **Password:** `SuperSecurePW123!` (change this!)
 
 ---
 
-##  Credits
+## ✅ Future Enhancements
 
-Inspired by the needs of real-time, headless audio engineers who want to avoid the noise and get straight to the signal.
+* Phase 2 auto-pull from GitHub if not preloaded
+* Support for custom usernames/passwords via CLI args
+* Optional graphical stack
+
+---
+
+## 📁 Files
+
+* `phase1.sh` — Initial installer
+* `phase2.sh` — Final provisioning (auto-executed)
+
+---
+
+Built for rapid bootstrapping of minimal, headless Arch Linux environments.
