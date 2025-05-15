@@ -1,12 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-CHROOT="/usr/bin/arch-chroot"
+CHROOT_BIN="/usr/bin/arch-chroot"
 
-if [ ! -x "$CHROOT" ]; then
-  echo "[✗] arch-chroot not found at $CHROOT"
-  echo "    Install it with: pacman -Sy arch-install-scripts"
-  exit 1
+# Make sure arch-chroot is available
+if ! command -v "$CHROOT_BIN" &>/dev/null; then
+  echo "[✗] arch-chroot not found. Installing..."
+  pacman -Sy --noconfirm arch-install-scripts
 fi
 
 echo "[*] Mounting target system..."
@@ -23,4 +23,4 @@ done
 echo "[*] Fetching and executing phase2.sh in chroot..."
 curl -fsSL https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/phase2.sh -o /mnt/phase2.sh
 chmod +x /mnt/phase2.sh
-$CHROOT /mnt /phase2.sh
+"$CHROOT_BIN" /mnt /phase2.sh
