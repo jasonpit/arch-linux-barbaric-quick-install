@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-if ! command -v arch-chroot &> /dev/null; then
-  echo "[✗] arch-chroot not found. Installing..."
+if ! command -v chroot &> /dev/null; then
+  echo "[✗] chroot not found. Installing..."
   pacman -Sy --noconfirm arch-install-scripts
 fi
 
@@ -29,3 +29,4 @@ else
   swapon /mnt/swapfile || echo "[*] Swap not activated."
 fi
 
+chroot /mnt /phase2.sh
