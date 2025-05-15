@@ -10,7 +10,7 @@ required_space_blocks=160000
 available_blocks=$(df --output=avail /mnt | tail -n1)
 
 if [ "$available_blocks" -lt "$required_space_blocks" ]; then
-  echo "[✗] Not enough disk space on /mnt ($available_blocks < $required_space_blocks blocks)."
+  echo "[\u2717] Not enough disk space on /mnt ($available_blocks < $required_space_blocks blocks)."
   echo "    Resize disk or increase partition size in Phase 1."
   exit 1
 fi
@@ -37,7 +37,11 @@ fi
 mount "$boot_part" /mnt/boot
 
 if [ -f /mnt/swapfile ]; then
-  swapon /mnt/swapfile
+  if ! grep -q "/mnt/swapfile" /proc/swaps; then
+    swapon /mnt/swapfile
+  else
+    echo "[*] Swap already active, skipping swapon."
+  fi
 else
   echo "No swapfile found; skipping swap."
 fi
@@ -46,7 +50,6 @@ fi
 if [ ! -d /mnt/tmp ]; then
   mkdir -p /mnt/tmp
 fi
-
 
 # Mount system pseudo-filesystems
 for fs in dev proc sys run; do
@@ -64,14 +67,14 @@ if [ ! -x /mnt/usr/bin/ln ]; then
   echo "[!] Required binaries missing from chroot. Attempting to re-run pacstrap..."
   echo "[*] Re-running pacstrap... this may take a moment."
   pacstrap -K /mnt base linux linux-firmware sudo vim --needed || {
-    echo "[✗] pacstrap failed. Check disk space or network issues."
+    echo "[\u2717] pacstrap failed. Check disk space or network issues."
     exit 1
   }
   if [ ! -x /mnt/usr/bin/ln ]; then
-    echo "[✗] Recovery attempt failed. Manual intervention required."
+    echo "[\u2717] Recovery attempt failed. Manual intervention required."
     exit 1
   else
-    echo "[✓] Recovery successful. Continuing..."
+    echo "[\u2713] Recovery successful. Continuing..."
   fi
 fi
 
@@ -90,16 +93,19 @@ arch-chroot /mnt bash -c "echo \"$HOSTNAME\" > /etc/hostname"
 
 # Configure hosts
 arch-chroot /mnt bash -c "cat <<EOF > /etc/hosts
-127.0.0.1	localhost
-::1		localhost
-127.0.1.1	$HOSTNAME.localdomain	$HOSTNAME
+127.0.0.1\tlocalhost
+::1\t\tlocalhost
+127.0.1.1\t$HOSTNAME.localdomain\t$HOSTNAME
 EOF"
 
 # Set root password
 arch-chroot /mnt bash -c "echo root:SuperSecurePW123! | chpasswd"
 
 # Create default user with realtime + sudo
-arch-chroot /mnt groupadd -f realtime
+group_exists=$(arch-chroot /mnt getent group realtime || true)
+if [[ -z "$group_exists" ]]; then
+  arch-chroot /mnt groupadd realtime
+fi
 arch-chroot /mnt useradd -m -G wheel,audio,video,optical,storage,realtime -s /bin/bash archadmin
 arch-chroot /mnt bash -c "echo archadmin:SuperSecurePW123! | chpasswd"
 arch-chroot /mnt sed -i '/%wheel ALL=(ALL:ALL) ALL/s/^# //' /etc/sudoers
@@ -150,6 +156,6 @@ fi
 arch-chroot /mnt systemctl disable phase2-install.service || true
 arch-chroot /mnt rm -f /etc/systemd/system/phase2-install.service
 
-echo "[✓] Phase 2 complete. Cleaning up..."
+echo "[\u2713] Phase 2 complete. Cleaning up..."
 umount -R /mnt || true
 reboot
