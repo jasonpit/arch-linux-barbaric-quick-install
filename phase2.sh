@@ -8,11 +8,40 @@ exec > >(tee -a "$log") 2>&1
 # Detect root partition
 root_disk=$(lsblk -dn -o NAME,TYPE | awk '$2 == "disk" {print $1}' | head -n1)
 root_dev="/dev/$root_disk"
-root_part="${root_dev}1"
+root_part="${root_dev}2"
+boot_part="${root_dev}1"
 
-# Mount everything
-mount "$root_part" /mnt
-swapon /mnt/swapfile || echo "No swapfile found; skipping swap."
+if [ ! -b "$root_part" ] || [ ! -b "$boot_part" ]; then
+  echo "Root or boot partition not found. Make sure Phase 1 completed successfully."
+  exit 1
+fi
+
+# Mount root and boot partitions if not already mounted
+if ! mountpoint -q /mnt; then
+  mount "$root_part" /mnt
+fi
+
+if [ ! -d /mnt/boot ]; then
+  mkdir -p /mnt/boot
+fi
+mount "$boot_part" /mnt/boot
+
+if [ -f /mnt/swapfile ]; then
+  swapon /mnt/swapfile
+else
+  echo "No swapfile found; skipping swap."
+fi
+
+# Mount system pseudo-filesystems
+for fs in dev proc sys run; do
+  target="/mnt/$fs"
+  if [ ! -d "$target" ]; then
+    mkdir -p "$target"
+  fi
+  if ! mountpoint -q "$target"; then
+    mount --bind "/$fs" "$target"
+  fi
+done
 
 # Set timezone and localization
 arch-chroot /mnt ln -sf /usr/share/zoneinfo/UTC /etc/localtime
@@ -83,6 +112,10 @@ zram-size = ram / 2
 EOF'
   arch-chroot /mnt rm -f /swapfile
 fi
+
+# Disable and remove phase2 systemd service
+arch-chroot /mnt systemctl disable phase2-install.service || true
+arch-chroot /mnt rm -f /etc/systemd/system/phase2-install.service
 
 echo "[✓] Phase 2 complete. Cleaning up..."
 umount -R /mnt || true

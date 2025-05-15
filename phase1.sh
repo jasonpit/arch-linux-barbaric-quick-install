@@ -65,9 +65,25 @@ echo "[*] Downloading Phase 2 setup script..."
 curl -sL https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/phase2.sh -o /mnt/phase2.sh
 chmod +x /mnt/phase2.sh
 
-# === Auto-run Phase 2 after chroot ===
-echo "[*] Setting auto-run of Phase 2 on first login..."
-echo 'bash /phase2.sh && rm /phase2.sh' >> /mnt/root/.bash_profile
+# === Create systemd service for Phase 2 ===
+cat <<EOF > /mnt/etc/systemd/system/phase2-install.service
+[Unit]
+Description=Run Phase 2 install script once
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/phase2.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Enable the service
+arch-chroot /mnt systemctl enable phase2-install.service
+
 
 # === Store SSH key if provided ===
 if [[ -n "$SSH_KEY" ]]; then
@@ -80,3 +96,4 @@ fi
 # === DONE ===
 echo "[!] Rebooting to apply partition table. After reboot, run manually if needed:"
 echo "    bash /mnt/phase2.sh"
+
