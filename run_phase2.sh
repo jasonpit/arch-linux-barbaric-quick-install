@@ -37,6 +37,6 @@ echo "[*] Fetching and executing phase2.sh in chroot..."
 curl -sSL -o /mnt/phase2.sh https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/phase2.sh
 chmod +x /mnt/phase2.sh
 
-echo "[*] Delegating swap activation to phase2.sh..."
+echo "[*] Delegating execution to phase2.sh in chroot..."
 
-chroot /mnt /phase2.sh
+arch-chroot /mnt /phase2.sh
