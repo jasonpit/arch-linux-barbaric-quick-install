@@ -26,7 +26,11 @@ chmod +x /mnt/phase2.sh
 if swapon --show | grep -q /mnt/swapfile; then
   echo "[*] Swap already active, skipping swapon."
 else
-  swapon /mnt/swapfile || echo "[*] Swap not activated."
+  if ! swapon /mnt/swapfile 2>&1 | grep -q "Device or resource busy"; then
+    echo "[*] Swap activated."
+  else
+    echo "[*] Swap already active or busy, continuing..."
+  fi
 fi
 
 chroot /mnt /phase2.sh

@@ -42,7 +42,8 @@ Ensure you have network connectivity.
 
 ```bash
 curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/phase1.sh
-chmod +x phase1.sh
+curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/run_phase2.sh
+chmod +x phase1.sh run_phase2.sh
 ./phase1.sh
 ```
 
@@ -62,9 +63,7 @@ chmod +x phase2.sh
 
 You can also rerun it manually (e.g., from chroot):
 
-```bash
-arch-chroot /mnt /phase2.sh
-```
+ v
 
 ---
 
