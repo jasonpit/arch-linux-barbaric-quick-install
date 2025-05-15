@@ -62,6 +62,11 @@ for fs in dev proc sys run; do
   fi
 done
 
+if ! command -v arch-chroot &>/dev/null; then
+  echo "[*] Installing arch-install-scripts..."
+  pacman -Sy --noconfirm arch-install-scripts
+fi
+
 # Ensure required binaries are available in the chroot
 if [ ! -x /mnt/usr/bin/ln ]; then
   echo "[!] Required binaries missing from chroot. Attempting to re-run pacstrap..."
@@ -77,6 +82,29 @@ if [ ! -x /mnt/usr/bin/ln ]; then
     echo "[\u2713] Recovery successful. Continuing..."
   fi
 fi
+
+EFI_PART="/dev/sda1"
+if ! blkid -s TYPE "$EFI_PART" | grep -q "vfat"; then
+  echo "[*] Formatting EFI partition as FAT32..."
+  mkfs.fat -F32 "$EFI_PART"
+  parted /dev/sda set 1 esp on
+fi
+
+echo "[*] Installing systemd-boot..."
+arch-chroot /mnt bootctl install
+
+PARTUUID=$(blkid -s PARTUUID -o value /dev/sda2)
+
+arch-chroot /mnt bash -c "cat > /boot/loader/loader.conf" <<EOF
+default arch.conf
+EOF
+
+arch-chroot /mnt bash -c "cat > /boot/loader/entries/arch.conf" <<EOF
+title   Arch Linux
+linux   /vmlinuz-linux
+initrd  /initramfs-linux.img
+options root=PARTUUID=$PARTUUID rw
+EOF
 
 # Set timezone and localization
 arch-chroot /mnt ln -sf /usr/share/zoneinfo/UTC /etc/localtime
@@ -100,6 +128,8 @@ EOF"
 
 # Set root password
 arch-chroot /mnt bash -c "echo root:SuperSecurePW123! | chpasswd"
+
+arch-chroot /mnt bash -c 'getent group realtime || groupadd realtime'
 
 # Create default user with realtime + sudo
 group_exists=$(arch-chroot /mnt getent group realtime || true)
@@ -156,6 +186,6 @@ fi
 arch-chroot /mnt systemctl disable phase2-install.service || true
 arch-chroot /mnt rm -f /etc/systemd/system/phase2-install.service
 
-echo "[\u2713] Phase 2 complete. Cleaning up..."
+echo "[✓] Phase 2 complete. Cleaning up and rebooting..."
 umount -R /mnt || true
 reboot

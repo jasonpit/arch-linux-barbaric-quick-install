@@ -54,7 +54,7 @@ fi
 
 # === BASE INSTALL ===
 echo "[*] Installing base system..."
-pacstrap /mnt base linux linux-firmware sudo vim openssh
+pacstrap /mnt base linux linux-firmware sudo vim openssh dosfstools
 
 # === FSTAB ===
 echo "[*] Generating fstab..."
