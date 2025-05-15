@@ -93,6 +93,22 @@ if [[ -n "$SSH_KEY" ]]; then
   chmod 600 /mnt/home/$USERNAME/.ssh/authorized_keys
 fi
 
+cat <<EOF > /mnt/etc/systemd/system/run-phase2.service
+[Unit]
+Description=Run Phase 2 Install Script
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /phase2.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+arch-chroot /mnt systemctl enable run-phase2.service
+
 # === DONE ===
 echo "[!] Rebooting to apply partition table. After reboot, run manually if needed:"
 echo "    bash /mnt/phase2.sh"
