@@ -1,4 +1,3 @@
-
 # Arch Linux Automated Installation (2-Phase Setup)
 
 This repository contains a fully automated 2-phase installer for Arch Linux. It is designed for quick provisioning of a minimal yet powerful Arch system, optimized for DSP and networked audio environments.
@@ -42,21 +41,30 @@ Ensure you have network connectivity.
 ### 2. Run Phase 1 Script
 
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/main/arch_full_autoinstall.sh)
+curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/phase1.sh
 chmod +x phase1.sh
 ./phase1.sh
-````
+```
 
-* You will be prompted to paste your **SSH public key** (optional).
-* Script installs base system, prepares Phase 2, and reboots.
 
-### 3. After Reboot: Phase 2 Automatically Runs
+* Phase 1 prompts for your **SSH public key** (optional), installs base packages, sets up auto-run for Phase 2, and reboots.
+
+### 3. After Reboot: run Phase 2 if it did not automatically run.
+
+```bash
+curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/phase2.sh
+chmod +x phase2.sh
+./phase2.sh
+```
 
 * Final configurations apply automatically.
-* You’ll be asked for:
+* You’ll be prompted to paste your SSH key and then the system will reboot automatically.
 
-  * SSH key injection (optional)
-  * Whether to use ZRAM instead of a swapfile (recommended for flash/NVMe)
+You can also rerun it manually (e.g., from chroot):
+
+```bash
+arch-chroot /mnt /phase2.sh
+```
 
 ---
 
