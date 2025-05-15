@@ -38,13 +38,15 @@ curl -sSL -o /mnt/phase2.sh https://raw.githubusercontent.com/jasonpit/arch-linu
 chmod +x /mnt/phase2.sh
 
 echo "[*] Checking swap status..."
-if swapon --show | grep -q "/mnt/swapfile"; then
+if grep -q "/swapfile" /mnt/etc/fstab; then
+  echo "[*] Swapfile listed in fstab, assuming system will activate on boot. Skipping swapon."
+elif swapon --show | grep -q "/mnt/swapfile"; then
   echo "[*] Swap is already active on /mnt/swapfile. Skipping swapon."
 elif grep -q "/mnt/swapfile" /proc/swaps; then
   echo "[*] Swap listed in /proc/swaps. Skipping swapon."
 else
   echo "[*] Activating swap..."
-  swapon /mnt/swapfile || echo "[!] Failed to activate swap. Continuing..."
+  chroot /mnt swapon /swapfile || echo "[!] Failed to activate swap inside chroot. Continuing..."
 fi
 
 echo "[*] Delegating execution to phase2.sh in chroot..."
