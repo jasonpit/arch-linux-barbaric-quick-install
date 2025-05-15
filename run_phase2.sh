@@ -29,4 +29,3 @@ else
   swapon /mnt/swapfile || echo "[*] Swap not activated."
 fi
 
-arch-chroot /mnt /phase2.sh
