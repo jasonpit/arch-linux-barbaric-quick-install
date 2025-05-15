@@ -5,6 +5,16 @@ set -euo pipefail
 log="/mnt/install.log"
 exec > >(tee -a "$log") 2>&1
 
+# Ensure there is enough free space before proceeding
+required_space_blocks=160000
+available_blocks=$(df --output=avail /mnt | tail -n1)
+
+if [ "$available_blocks" -lt "$required_space_blocks" ]; then
+  echo "[✗] Not enough disk space on /mnt ($available_blocks < $required_space_blocks blocks)."
+  echo "    Resize disk or increase partition size in Phase 1."
+  exit 1
+fi
+
 # Detect root partition
 root_disk=$(lsblk -dn -o NAME,TYPE | awk '$2 == "disk" {print $1}' | head -n1)
 root_dev="/dev/$root_disk"
@@ -32,6 +42,12 @@ else
   echo "No swapfile found; skipping swap."
 fi
 
+# Ensure /mnt/tmp exists before mounting pseudo-filesystems
+if [ ! -d /mnt/tmp ]; then
+  mkdir -p /mnt/tmp
+fi
+
+
 # Mount system pseudo-filesystems
 for fs in dev proc sys run; do
   target="/mnt/$fs"
@@ -42,6 +58,22 @@ for fs in dev proc sys run; do
     mount --bind "/$fs" "$target"
   fi
 done
+
+# Ensure required binaries are available in the chroot
+if [ ! -x /mnt/usr/bin/ln ]; then
+  echo "[!] Required binaries missing from chroot. Attempting to re-run pacstrap..."
+  echo "[*] Re-running pacstrap... this may take a moment."
+  pacstrap -K /mnt base linux linux-firmware sudo vim --needed || {
+    echo "[✗] pacstrap failed. Check disk space or network issues."
+    exit 1
+  }
+  if [ ! -x /mnt/usr/bin/ln ]; then
+    echo "[✗] Recovery attempt failed. Manual intervention required."
+    exit 1
+  else
+    echo "[✓] Recovery successful. Continuing..."
+  fi
+fi
 
 # Set timezone and localization
 arch-chroot /mnt ln -sf /usr/share/zoneinfo/UTC /etc/localtime
