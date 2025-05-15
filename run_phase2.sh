@@ -38,12 +38,12 @@ curl -sSL -o /mnt/phase2.sh https://raw.githubusercontent.com/jasonpit/arch-linu
 chmod +x /mnt/phase2.sh
 
 echo "[*] Checking swap status..."
-if grep -q "/mnt/swapfile" /proc/swaps; then
-  echo "[*] Swap already active, skipping."
-elif ! grep -q "/mnt/swapfile" /proc/swaps && swapon /mnt/swapfile 2>/dev/null; then
-  echo "[*] Swap successfully activated."
+if grep -q "/swapfile" /proc/swaps; then
+    echo "[*] Swap already active in chroot, skipping."
+elif chroot /mnt swapon /swapfile 2>/dev/null; then
+    echo "[*] Swap successfully activated inside chroot."
 else
-  echo "[!] Swap could not be activated (likely already active or in use)."
+    echo "[!] Swap could not be activated inside chroot."
 fi
 
 chroot /mnt /phase2.sh
