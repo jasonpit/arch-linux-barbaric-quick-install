@@ -40,7 +40,9 @@ chmod +x /mnt/phase2.sh
 echo "[*] Checking swap status..."
 if swapon --show | grep -q /mnt/swapfile; then
   echo "[*] Swap already active, skipping."
-elif swapon /mnt/swapfile 2>/dev/null; then
+else
+  echo "[*] Swap appears already in use, skipping swapon."
+elif ! grep -q "/mnt/swapfile" /proc/swaps && swapon /mnt/swapfile 2>/dev/null; then
   echo "[*] Swap successfully activated."
 else
   echo "[!] Swap could not be activated (likely already active or in use)."
