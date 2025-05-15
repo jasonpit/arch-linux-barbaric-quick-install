@@ -37,6 +37,16 @@ echo "[*] Fetching and executing phase2.sh in chroot..."
 curl -sSL -o /mnt/phase2.sh https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/phase2.sh
 chmod +x /mnt/phase2.sh
 
+echo "[*] Checking swap status..."
+if swapon --show | grep -q "/mnt/swapfile"; then
+  echo "[*] Swap is already active on /mnt/swapfile. Skipping swapon."
+elif grep -q "/mnt/swapfile" /proc/swaps; then
+  echo "[*] Swap listed in /proc/swaps. Skipping swapon."
+else
+  echo "[*] Activating swap..."
+  swapon /mnt/swapfile || echo "[!] Failed to activate swap. Continuing..."
+fi
+
 echo "[*] Delegating execution to phase2.sh in chroot..."
 
 arch-chroot /mnt /phase2.sh
