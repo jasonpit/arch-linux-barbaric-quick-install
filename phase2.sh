@@ -99,6 +99,7 @@ EOF"
 arch-chroot /mnt bash -c "echo root:SuperSecurePW123! | chpasswd"
 
 # Create default user with realtime + sudo
+arch-chroot /mnt groupadd -f realtime
 arch-chroot /mnt useradd -m -G wheel,audio,video,optical,storage,realtime -s /bin/bash archadmin
 arch-chroot /mnt bash -c "echo archadmin:SuperSecurePW123! | chpasswd"
 arch-chroot /mnt sed -i '/%wheel ALL=(ALL:ALL) ALL/s/^# //' /etc/sudoers
