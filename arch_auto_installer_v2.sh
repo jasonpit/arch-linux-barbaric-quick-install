@@ -104,7 +104,7 @@ linux   /vmlinuz-linux
 initrd  /intel-ucode.img
 initrd  /amd-ucode.img
 initrd  /initramfs-linux.img
-options root=PARTUUID=$(blkid -s PARTUUID -o value /dev/sda2) rw
+options root=PARTUUID=\$(blkid -s PARTUUID -o value /dev/sda2) rw
 EOF
 
 cat > /boot/loader/loader.conf <<EOF
