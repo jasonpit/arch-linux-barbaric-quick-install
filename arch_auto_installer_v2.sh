@@ -131,7 +131,7 @@ if [[ -n "$SWAP_SIZE" && "$SWAP_SIZE" != "0" ]]; then
   echo "/swapfile none swap defaults 0 0" >> /etc/fstab
 fi
 
-efibootmgr --create --disk $DISK --part 1 --label "Arch Linux" --loader /EFI/systemd/systemd-bootx64.efi || echo "[!] efibootmgr failed but systemd-boot should still work"
+efibootmgr --create --disk /dev/sda --part 1 --label "Arch Linux" --loader /EFI/systemd/systemd-bootx64.efi || echo "[!] efibootmgr failed but systemd-boot should still work"
 EOF
 
 echo "[✔] Arch install complete. Reboot when ready."
