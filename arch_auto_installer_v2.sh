@@ -1,21 +1,18 @@
 #!/bin/bash
-### Arch Linux Automated Installer
-# This script automates the installation of Arch Linux with a basic setup.
-# It partitions the disk, installs the base system, and sets up a user. 
-# curl -LO https://raw.githubusercontent.com/YOURREPO/arch_auto_installer.sh
-# chmod +x arch_auto_installer.sh
-# USERNAME=myuser PASSWORD=mypass HOSTNAME=myhost ./arch_auto_installer.sh#
 
 set -euo pipefail
 
-# === CONFIG ===
-HOSTNAME="${HOSTNAME:-arch}"
+# === USER CONFIG ===
 USERNAME="${USERNAME:-archuser}"
 PASSWORD="${PASSWORD:-SuperSecurePassword123!}"
+HOSTNAME="${HOSTNAME:-archlinux}"
 TIMEZONE="America/Los_Angeles"
 LOCALE="en_US.UTF-8"
 KEYMAP="us"
-SWAP_SIZE="2G"  # e.g., 0 disables swap
+SWAP_SIZE="2G"
+
+log="/mnt/install.log"
+exec > >(tee -a "$log") 2>&1
 
 # === Detect disk ===
 echo "[*] Detecting primary disk..."
@@ -25,19 +22,19 @@ ROOT_PART="${DISK}2"
 
 echo "[+] Using disk: $DISK"
 
-# === Ask for SSH Key ===
+# === SSH Key (optional) ===
 echo -n "Paste your SSH public key (or leave blank to skip): "
 read -r SSH_KEY
 
-# === Partition Disk ===
-echo "[*] Wiping and partitioning $DISK..."
+# === Partition disk ===
+echo "[*] Partitioning $DISK..."
 sgdisk --zap-all "$DISK"
 sgdisk -n 1:0:+512M -t 1:ef00 -c 1:"EFI System" "$DISK"
 sgdisk -n 2:0:0     -t 2:8300 -c 2:"Linux Root" "$DISK"
 partprobe "$DISK"
 sleep 2
 
-# === Format and Mount ===
+# === Format and mount ===
 mkfs.vfat -F32 "$EFI_PART"
 mkfs.ext4 "$ROOT_PART"
 
@@ -45,20 +42,19 @@ mount "$ROOT_PART" /mnt
 mkdir -p /mnt/boot
 mount "$EFI_PART" /mnt/boot
 
-# === Base Install ===
+# === Base install ===
 echo "[*] Installing base system..."
-pacstrap /mnt base linux linux-firmware sudo zsh networkmanager intel-ucode amd-ucode grub efibootmgr
+pacstrap /mnt base linux linux-firmware sudo zsh networkmanager intel-ucode amd-ucode efibootmgr systemd-boot
 
 # === FSTAB ===
 genfstab -U /mnt >> /mnt/etc/fstab
 
-# === Chroot Setup ===
+# === Chroot setup ===
 arch-chroot /mnt /bin/bash -e <<EOF
-echo "[*] Setting timezone..."
+echo "[*] Setting system clock and locale..."
 ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 hwclock --systohc
 
-echo "[*] Generating locales..."
 echo "$LOCALE UTF-8" > /etc/locale.gen
 locale-gen
 echo "LANG=$LOCALE" > /etc/locale.conf
@@ -72,12 +68,15 @@ echo "127.0.1.1 $HOSTNAME.localdomain $HOSTNAME" >> /etc/hosts
 echo "[*] Setting root password..."
 echo "root:$PASSWORD" | chpasswd
 
-echo "[*] Creating user $USERNAME..."
-useradd -m -G wheel -s /bin/zsh "$USERNAME"
+echo "[*] Creating user '$USERNAME'..."
+useradd -m -G wheel -s /bin/zsh "$USERNAME" || echo "[!] User creation failed."
 echo "$USERNAME:$PASSWORD" | chpasswd
-echo "%wheel ALL=(ALL:ALL) ALL" > /etc/sudoers.d/10-wheel
+
+echo "[*] Enabling sudo for wheel group..."
+echo '%wheel ALL=(ALL:ALL) ALL' > /etc/sudoers.d/10-wheel
 
 if [ -n "$SSH_KEY" ]; then
+  echo "[*] Setting SSH key for $USERNAME"
   mkdir -p /home/$USERNAME/.ssh
   echo "$SSH_KEY" > /home/$USERNAME/.ssh/authorized_keys
   chmod 700 /home/$USERNAME/.ssh
@@ -85,34 +84,32 @@ if [ -n "$SSH_KEY" ]; then
   chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
 fi
 
-echo "[*] Enabling services..."
 systemctl enable NetworkManager
 
-echo "[*] Installing bootloader..."
-bootctl install
+echo "[*] Installing systemd-boot..."
+bootctl --path=/boot install
 
-UUID=$(blkid -s PARTUUID -o value "$ROOT_PART")
+UUID=$(blkid -s PARTUUID -o value $ROOT_PART)
 
-mkdir -p /boot/loader/entries
-cat > /boot/loader/entries/arch.conf <<ENTRY
+cat > /boot/loader/entries/arch.conf <<EOL
 title   Arch Linux
 linux   /vmlinuz-linux
 initrd  /intel-ucode.img
 initrd  /amd-ucode.img
 initrd  /initramfs-linux.img
 options root=PARTUUID=$UUID rw
-ENTRY
+EOL
 
-echo "default arch.conf" > /boot/loader/loader.conf
-echo "timeout 3" >> /boot/loader/loader.conf
-echo "editor no" >> /boot/loader/loader.conf
+cat > /boot/loader/loader.conf <<EOL
+default arch.conf
+timeout 3
+editor no
+EOL
 
-echo "[*] Generating initramfs..."
 mkinitcpio -P
 
-# === Swap Setup ===
 if [[ -n "$SWAP_SIZE" && "$SWAP_SIZE" != "0" ]]; then
-  echo "[*] Creating swapfile of size $SWAP_SIZE..."
+  echo "[*] Creating swapfile..."
   dd if=/dev/zero of=/swapfile bs=1M count=$(echo $SWAP_SIZE | sed 's/G//')000 status=progress
   chmod 600 /swapfile
   mkswap /swapfile
@@ -120,6 +117,7 @@ if [[ -n "$SWAP_SIZE" && "$SWAP_SIZE" != "0" ]]; then
   echo "/swapfile none swap defaults 0 0" >> /etc/fstab
 fi
 
+efibootmgr --create --disk $DISK --part 1 --label "Arch Linux" --loader /EFI/systemd/systemd-bootx64.efi || echo "[!] efibootmgr failed but systemd-boot should still work"
 EOF
 
-echo "[✔] Installation complete. You can now reboot into your new system."
+echo "[✔] Arch install complete. Reboot when ready."
