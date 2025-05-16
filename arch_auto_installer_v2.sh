@@ -95,8 +95,10 @@ systemctl enable NetworkManager
 echo "[*] Installing systemd-boot..."
 bootctl --path=/boot install
 
-echo '#!/bin/bash
-cat > /boot/loader/entries/arch.conf <<EOF
+cat << 'EOS' > /mnt/tmp/setup-bootloader.sh
+#!/bin/bash
+
+cat <<EOF > /boot/loader/entries/arch.conf
 title   Arch Linux
 linux   /vmlinuz-linux
 initrd  /intel-ucode.img
@@ -105,12 +107,12 @@ initrd  /initramfs-linux.img
 options root=PARTUUID=$(blkid -s PARTUUID -o value /dev/sda2) rw
 EOF
 
-cat > /boot/loader/loader.conf <<EOF
+cat <<EOF > /boot/loader/loader.conf
 default arch.conf
 timeout 3
 editor no
 EOF
-' > /mnt/tmp/setup-bootloader.sh
+EOS
 
 chmod +x /mnt/tmp/setup-bootloader.sh
 arch-chroot /mnt /tmp/setup-bootloader.sh
