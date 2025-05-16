@@ -1,4 +1,10 @@
 #!/bin/bash
+### Arch Linux Automated Installer
+# This script automates the installation of Arch Linux with a basic setup.
+# It partitions the disk, installs the base system, and sets up a user. 
+# curl -LO https://raw.githubusercontent.com/YOURREPO/arch_auto_installer.sh
+# chmod +x arch_auto_installer.sh
+# USERNAME=myuser PASSWORD=mypass HOSTNAME=myhost ./arch_auto_installer.sh#
 
 set -euo pipefail
 
