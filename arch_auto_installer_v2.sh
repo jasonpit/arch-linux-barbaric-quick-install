@@ -55,6 +55,25 @@ pacstrap /mnt base linux linux-firmware sudo zsh networkmanager intel-ucode amd-
 # === FSTAB ===
 genfstab -U /mnt >> /mnt/etc/fstab
 
+cat << 'EOS' > /mnt/tmp/setup-bootloader.sh
+#!/bin/bash
+
+UUID=$(blkid -s PARTUUID -o value /dev/sda2)
+
+echo "title   Arch Linux" > /boot/loader/entries/arch.conf
+echo "linux   /vmlinuz-linux" >> /boot/loader/entries/arch.conf
+echo "initrd  /intel-ucode.img" >> /boot/loader/entries/arch.conf
+echo "initrd  /amd-ucode.img" >> /boot/loader/entries/arch.conf
+echo "initrd  /initramfs-linux.img" >> /boot/loader/entries/arch.conf
+echo "options root=PARTUUID=$UUID rw" >> /boot/loader/entries/arch.conf
+
+echo "default arch.conf" > /boot/loader/loader.conf
+echo "timeout 3" >> /boot/loader/loader.conf
+echo "editor no" >> /boot/loader/loader.conf
+EOS
+
+chmod +x /mnt/tmp/setup-bootloader.sh
+
 # === Chroot setup ===
 arch-chroot /mnt /bin/bash -e <<EOF
 echo "[*] Setting system clock and locale..."
@@ -95,26 +114,6 @@ systemctl enable NetworkManager
 echo "[*] Installing systemd-boot..."
 bootctl --path=/boot install
 
-echo '#!/bin/bash
-
-UUID=$(blkid -s PARTUUID -o value /dev/sda2)
-
-echo "title   Arch Linux" > /boot/loader/entries/arch.conf
-echo "linux   /vmlinuz-linux" >> /boot/loader/entries/arch.conf
-echo "initrd  /intel-ucode.img" >> /boot/loader/entries/arch.conf
-echo "initrd  /amd-ucode.img" >> /boot/loader/entries/arch.conf
-echo "initrd  /initramfs-linux.img" >> /boot/loader/entries/arch.conf
-echo "options root=PARTUUID=$UUID rw" >> /boot/loader/entries/arch.conf
-
-echo "default arch.conf" > /boot/loader/loader.conf
-echo "timeout 3" >> /boot/loader/loader.conf
-echo "editor no" >> /boot/loader/loader.conf
-' > /mnt/tmp/setup-bootloader.sh
-
-chmod +x /mnt/tmp/setup-bootloader.sh
-arch-chroot /mnt /tmp/setup-bootloader.sh
-rm /mnt/tmp/setup-bootloader.sh
-
 mkinitcpio -P
 
 if [[ -n "$SWAP_SIZE" && "$SWAP_SIZE" != "0" ]]; then
@@ -128,5 +127,8 @@ fi
 
 efibootmgr --create --disk /dev/sda --part 1 --label "Arch Linux" --loader /EFI/systemd/systemd-bootx64.efi || echo "[!] efibootmgr failed but systemd-boot should still work"
 EOF
+
+arch-chroot /mnt /tmp/setup-bootloader.sh
+rm /mnt/tmp/setup-bootloader.sh
 
 echo "[✔] Arch install complete. Reboot when ready."
