@@ -98,7 +98,7 @@ bootctl --path=/boot install
 cat > /mnt/tmp/setup-bootloader.sh << 'EOS'
 #!/bin/bash
 
-UUID=$(blkid -s PARTUUID -o value /dev/sda2)
+# UUID=$(blkid -s PARTUUID -o value /dev/sda2)
 
 cat > /boot/loader/entries/arch.conf <<EOF
 title   Arch Linux
@@ -106,7 +106,7 @@ linux   /vmlinuz-linux
 initrd  /intel-ucode.img
 initrd  /amd-ucode.img
 initrd  /initramfs-linux.img
-options root=PARTUUID=$UUID rw
+options root=PARTUUID=$(blkid -s PARTUUID -o value /dev/sda2) rw
 EOF
 
 cat > /boot/loader/loader.conf <<EOF
