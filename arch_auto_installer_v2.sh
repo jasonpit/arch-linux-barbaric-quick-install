@@ -26,7 +26,12 @@ DISK=$(lsblk -ndo NAME,TYPE | awk '$2=="disk" {print "/dev/"$1; exit}')
 EFI_PART="${DISK}1"
 ROOT_PART="${DISK}2"
 
+
 echo "[+] Using disk: $DISK"
+
+echo "[*] Installing reflector and updating mirrorlist..."
+pacman -Sy --noconfirm reflector
+reflector --country US --latest 10 --sort rate --protocol https --save /etc/pacman.d/mirrorlist
 
 # === SSH Key (optional) ===
 echo -n "Paste your SSH public key (or leave blank to skip): "
