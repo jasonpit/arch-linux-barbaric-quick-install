@@ -94,7 +94,7 @@ systemctl enable NetworkManager
 echo "[*] Installing systemd-boot..."
 bootctl --path=/boot install
 
-UUID=$(blkid -s PARTUUID -o value $ROOT_PART)
+UUID=$(blkid -s PARTUUID -o value /dev/sda2)
 
 cat > /boot/loader/entries/arch.conf <<EOL
 title   Arch Linux
