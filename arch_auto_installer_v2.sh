@@ -44,7 +44,7 @@ mount "$EFI_PART" /mnt/boot
 
 # === Base install ===
 echo "[*] Installing base system..."
-pacstrap /mnt base linux linux-firmware sudo zsh networkmanager intel-ucode amd-ucode efibootmgr systemd-boot
+pacstrap /mnt base linux linux-firmware sudo zsh networkmanager intel-ucode amd-ucode efibootmgr
 
 # === FSTAB ===
 genfstab -U /mnt >> /mnt/etc/fstab
