@@ -93,12 +93,24 @@ echo "127.0.1.1 $HOSTNAME.localdomain $HOSTNAME" >> /etc/hosts
 echo "[*] Setting root password..."
 echo "root:$PASSWORD" | chpasswd
 
+echo "[*] Enabling sudo for wheel group..."
+echo '%wheel ALL=(ALL:ALL) ALL' > /etc/sudoers.d/10-wheel
+
+echo "[*] Enabling NetworkManager..."
+systemctl enable NetworkManager
+
+echo "[*] Installing and enabling SSH..."
+pacman -Sy --noconfirm openssh
+systemctl enable sshd
+
+if [ "$USERNAME" = "root" ]; then
+  echo "[!] Cannot use 'root' as a custom username. Please choose a different USERNAME."
+  exit 1
+fi
+
 echo "[*] Creating user '$USERNAME'..."
 useradd -m -G wheel -s /bin/zsh "$USERNAME" || echo "[!] User creation failed."
 echo "$USERNAME:$PASSWORD" | chpasswd
-
-echo "[*] Enabling sudo for wheel group..."
-echo '%wheel ALL=(ALL:ALL) ALL' > /etc/sudoers.d/10-wheel
 
 if [ -n "$SSH_KEY" ]; then
   echo "[*] Setting SSH key for $USERNAME"
@@ -108,8 +120,6 @@ if [ -n "$SSH_KEY" ]; then
   chmod 600 /home/$USERNAME/.ssh/authorized_keys
   chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
 fi
-
-systemctl enable NetworkManager
 
 echo "[*] Installing systemd-boot..."
 bootctl --path=/boot install
