@@ -95,7 +95,7 @@ systemctl enable NetworkManager
 echo "[*] Installing systemd-boot..."
 bootctl --path=/boot install
 
-cat << 'EOS' > /mnt/tmp/setup-bootloader.sh
+cat << EOS > /mnt/tmp/setup-bootloader.sh
 #!/bin/bash
 
 cat <<EOF > /boot/loader/entries/arch.conf
@@ -104,7 +104,7 @@ linux   /vmlinuz-linux
 initrd  /intel-ucode.img
 initrd  /amd-ucode.img
 initrd  /initramfs-linux.img
-options root=PARTUUID=$(blkid -s PARTUUID -o value /dev/sda2) rw
+options root=PARTUUID=\$(blkid -s PARTUUID -o value /dev/sda2) rw
 EOF
 
 cat <<EOF > /boot/loader/loader.conf
