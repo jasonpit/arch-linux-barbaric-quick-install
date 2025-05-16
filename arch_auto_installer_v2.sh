@@ -98,8 +98,6 @@ bootctl --path=/boot install
 cat > /mnt/tmp/setup-bootloader.sh << 'EOS'
 #!/bin/bash
 
-# UUID=$(blkid -s PARTUUID -o value /dev/sda2)
-
 cat > /boot/loader/entries/arch.conf <<EOF
 title   Arch Linux
 linux   /vmlinuz-linux
