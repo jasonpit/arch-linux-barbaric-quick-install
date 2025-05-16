@@ -1,5 +1,10 @@
 #!/bin/bash
 
+#!/bin/bash
+
+# Clean any existing mounts to avoid errors on rerun
+umount -R /mnt 2>/dev/null || true
+
 set -euo pipefail
 
 # === USER CONFIG ===
