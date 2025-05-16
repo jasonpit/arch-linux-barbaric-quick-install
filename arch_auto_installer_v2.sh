@@ -1,6 +1,7 @@
 #!/bin/bash
-
-#!/bin/bash
+## curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/arch_auto_installer_v2.sh && chmod +x arch_auto_installer_v2.sh && USERNAME=node PASSWORD=meat HOSTNAME=nodeos ./arch_auto_installer_v2.sh ./arch_auto_installer_v2.sh
+# This script automates the installation of Arch Linux with a focus on simplicity and speed.
+# It is designed to be run from a live USB environment and will partition, format, and install the base system.
 
 # Clean any existing mounts to avoid errors on rerun
 umount -R /mnt 2>/dev/null || true
