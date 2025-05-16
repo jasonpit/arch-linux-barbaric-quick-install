@@ -13,7 +13,7 @@ This script fully automates the installation of Arch Linux with:
 
 ---
 
-## 🔧 Usage
+## Usage
 
 Run this script inside an Arch ISO shell or over SSH:
 
@@ -23,11 +23,11 @@ chmod +x arch_auto_installer_v2.sh
 USERNAME=node PASSWORD=meat HOSTNAME=nodeos ./arch_auto_installer_v2.sh
 ```
 
-🛑 **IMPORTANT:** Do not use `USERNAME=root`. The script will abort to prevent login issues.
+**IMPORTANT:** Do not use `USERNAME=root`. The script will abort to prevent login issues.
 
 ---
 
-## 🛠 Recovery + Confirmation (after install)
+## Recovery + Confirmation (after install)
 
 If you reboot and land in the UEFI shell or cannot log in, follow these steps:
 
@@ -67,11 +67,11 @@ umount -R /mnt
 reboot
 ```
 
-✅ You should now boot into a fully configured Arch system with SSH access and `node` as your user.
+You should now boot into a fully configured Arch system with SSH access and `node` as your user.
 
 ---
 
-## 🧠 Features
+## Features
 
 - Auto-detects primary disk
 - Sets up fast mirrors using `reflector`
