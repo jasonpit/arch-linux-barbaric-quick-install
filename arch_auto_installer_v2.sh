@@ -128,6 +128,8 @@ fi
 
 echo "[*] Installing systemd-boot..."
 bootctl --path=/boot install
+echo "[*] Copying fallback BOOTX64.EFI..."
+cp -f /boot/EFI/systemd/systemd-bootx64.efi /boot/EFI/BOOT/BOOTX64.EFI
 
 mkinitcpio -P
 
