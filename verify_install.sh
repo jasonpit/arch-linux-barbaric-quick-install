@@ -54,4 +54,4 @@ for pkg in vim sudo openssh base; do
 done
 
 print_header "All checks complete"
-echo "✅ System baseline looks clean. Ready to move on to NodeOS setup."
+echo "✅ System baseline looks clean. Ready to move on to setup."
