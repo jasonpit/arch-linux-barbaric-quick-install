@@ -1,4 +1,8 @@
 #!/bin/bash
+## This script verifies the installation of Arch Linux and checks for common issues.
+## It is designed to be run after the installation script to ensure everything is set up correctly. 
+## curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/verify_install.sh && chmod +x verify_install.sh && ./verify_install.sh
+
 
 set -euo pipefail
 
