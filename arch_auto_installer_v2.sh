@@ -1,4 +1,4 @@
-#bin/bash
+#!/bin/bash
 # run like this 
 # curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/arch_auto_installer_v2.sh
 # chmod +x arch_auto_installer_v2.sh
@@ -15,15 +15,12 @@ umount -R /mnt 2>/dev/null || true
 
 set -euo pipefail
 
-echo "[debug] Raw \$USERNAME='${USERNAME:-}'"
-if [[ "$EUID" -eq 0 && "${USERNAME:-}" != "" ]]; then
-  echo "[debug] EUID is 0, but USERNAME was explicitly passed as '$USERNAME'"
-fi
-echo "[debug] Raw \$EUID='$EUID'"
+USERNAME="${USERNAME:-}"
+echo "[debug] Raw \$USERNAME='$USERNAME'"
 
 #
 # === USER CONFIG ===
-if [[ "${USERNAME:-}" == "" || "${USERNAME}" == "root" ]]; then
+if [[ "$USERNAME" == "" || "$USERNAME" == "root" ]]; then
   echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
   exit 1
 fi
