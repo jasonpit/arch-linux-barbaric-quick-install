@@ -1,3 +1,83 @@
+Verify Install
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+53
+54
+55
+56
+57
+58
+59
+60
+61
+62
+63
+64
+65
+66
+67
+68
+69
+70
+71
+72
+73
+74
+75
+76
+77
+78
+79
 #!/bin/bash
 # run like this 
 # curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/arch_auto_installer_v2.sh
@@ -13,20 +93,14 @@
 # Clean any existing mounts to avoid errors on rerun
 umount -R /mnt 2>/dev/null || true
 
+set -euo pipefail
+
+# Validate that USERNAME is set and not "root"
 if [[ -z "${USERNAME:-}" || "${USERNAME}" == "root" ]]; then
   echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
   exit 1
 fi
 
-    else
-      echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
-      exit 1
-    fi
-  else
-    echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
-    exit 1
-  fi
-fi
 echo "[debug] Raw \$USERNAME='$USERNAME'"
 
 # === USER CONFIG ===
@@ -83,142 +157,3 @@ sleep 2
 if [[ "$DISK" == *"nvme"* ]]; then
   EFI_PART="${DISK}p1"
   ROOT_PART="${DISK}p2"
-else
-  EFI_PART="${DISK}1"
-  ROOT_PART="${DISK}2"
-fi
-
-# === Format and mount ===
-mkfs.vfat -F32 "$EFI_PART"
-mkfs.ext4 "$ROOT_PART"
-
-mount "$ROOT_PART" /mnt
-mkdir -p /mnt/boot
-mount "$EFI_PART" /mnt/boot
-
-# === Base install ===
-echo "[*] Installing base system..."
-pacstrap /mnt base linux linux-firmware sudo zsh networkmanager intel-ucode amd-ucode efibootmgr
-
-# === FSTAB ===
-genfstab -U /mnt >> /mnt/etc/fstab
-
-cat << 'EOS' > /mnt/tmp/setup-bootloader.sh
-#!/bin/bash
-
-UUID=$(blkid -s PARTUUID -o value /dev/sda2)
-
-echo "title   Arch Linux" > /boot/loader/entries/arch.conf
-echo "linux   /vmlinuz-linux" >> /boot/loader/entries/arch.conf
-echo "initrd  /intel-ucode.img" >> /boot/loader/entries/arch.conf
-echo "initrd  /amd-ucode.img" >> /boot/loader/entries/arch.conf
-echo "initrd  /initramfs-linux.img" >> /boot/loader/entries/arch.conf
-echo "options root=PARTUUID=$UUID rw" >> /boot/loader/entries/arch.conf
-
-echo "default arch.conf" > /boot/loader/loader.conf
-echo "timeout 3" >> /boot/loader/loader.conf
-echo "editor no" >> /boot/loader/loader.conf
-EOS
-
-chmod +x /mnt/tmp/setup-bootloader.sh
-
-export USERNAME
-export PASSWORD
-export SSH_KEY
-
-# === Chroot setup ===
-echo "[debug] Entering chroot with USERNAME='$USERNAME'"
-arch-chroot /mnt /usr/bin/env -i \
-  USERNAME="$USERNAME" \
-  PASSWORD="$PASSWORD" \
-  SSH_KEY="$SSH_KEY" \
-  HOSTNAME="$HOSTNAME" \
-  SWAP_SIZE="$SWAP_SIZE" \
-  TIMEZONE="$TIMEZONE" \
-  LOCALE="$LOCALE" \
-  KEYMAP="$KEYMAP" \
-  HOME=/root TERM=$TERM PATH=/usr/bin:/usr/sbin:/bin:/sbin \
-  bash -e <<'EOF'
-export USERNAME="$USERNAME"
-export PASSWORD="$PASSWORD"
-export SSH_KEY="$SSH_KEY"
-export HOSTNAME="$HOSTNAME"
-export SWAP_SIZE="$SWAP_SIZE"
-export TIMEZONE="$TIMEZONE"
-export LOCALE="$LOCALE"
-export KEYMAP="$KEYMAP"
-
-echo "[debug] In chroot, USERNAME='$USERNAME'"
-echo "[*] Setting system clock and locale..."
-ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
-hwclock --systohc
-
-echo "$LOCALE UTF-8" >> /etc/locale.gen
-locale-gen
-echo "LANG=$LOCALE" > /etc/locale.conf
-echo "KEYMAP=$KEYMAP" > /etc/vconsole.conf
-echo "FONT=ter-v16n" >> /etc/vconsole.conf
-
-echo "$HOSTNAME" > /etc/hostname
-echo "127.0.0.1 localhost" >> /etc/hosts
-echo "::1       localhost" >> /etc/hosts
-echo "127.0.1.1 $HOSTNAME.localdomain $HOSTNAME" >> /etc/hosts
-
-echo "[*] Setting root password..."
-echo "root:$PASSWORD" | chpasswd
-
-echo "[*] Enabling sudo for wheel group..."
-echo '%wheel ALL=(ALL:ALL) ALL' > /etc/sudoers.d/10-wheel
-
-echo "[*] Enabling NetworkManager..."
-systemctl enable NetworkManager
-
-echo "[*] Installing and enabling SSH..."
-pacman -Sy --noconfirm openssh
-systemctl enable sshd
-
-if [[ "$USERNAME" == "" || "$USERNAME" == "root" ]]; then
-  echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
-  exit 1
-fi
-
-echo "[*] Creating user '$USERNAME'..."
-useradd -m -G wheel -s /bin/zsh "$USERNAME" || echo "[!] User creation failed."
-echo "$USERNAME:$PASSWORD" | chpasswd
-
-if [ -n "$SSH_KEY" ]; then
-  echo "[*] Setting SSH key for $USERNAME"
-  mkdir -p /home/$USERNAME/.ssh
-  echo "$SSH_KEY" > /home/$USERNAME/.ssh/authorized_keys
-  chmod 700 /home/$USERNAME/.ssh
-  chmod 600 /home/$USERNAME/.ssh/authorized_keys
-  chown -R $USERNAME:$USERNAME /home/$USERNAME/.ssh
-fi
-
-echo "[*] Installing systemd-boot..."
-bootctl --path=/boot install
-echo "[*] Copying fallback BOOTX64.EFI..."
-mkdir -p /boot/EFI/BOOT
-cp -f /boot/EFI/systemd/systemd-bootx64.efi /boot/EFI/BOOT/BOOTX64.EFI
-
-mkinitcpio -P
-
-if [[ -n "$SWAP_SIZE" && "$SWAP_SIZE" != "0" ]]; then
-  echo "[*] Creating swapfile..."
-  dd if=/dev/zero of=/swapfile bs=1M count=$(echo $SWAP_SIZE | sed 's/G//')000 status=progress
-  chmod 600 /swapfile
-  mkswap /swapfile
-  swapon /swapfile
-  echo "/swapfile none swap defaults 0 0" >> /etc/fstab
-fi
-
-efibootmgr --create --disk /dev/sda --part 1 --label "Arch Linux" --loader /EFI/systemd/systemd-bootx64.efi || echo "[!] efibootmgr failed but systemd-boot should still work"
-EOF
-
-arch-chroot /mnt /tmp/setup-bootloader.sh
-rm /mnt/tmp/setup-bootloader.sh
-
-echo "[debug] USERNAME='$USERNAME'"
-env -i USERNAME="$USERNAME" PASSWORD="$PASSWORD" SSH_KEY="$SSH_KEY" DISK="$DISK" HOSTNAME="$HOSTNAME" HOME=/root TERM=$TERM PATH=/usr/bin:/usr/sbin:/bin:/sbin arch-chroot /mnt /finalize.sh
-
-echo "[✔] Arch install complete. Reboot when ready."
