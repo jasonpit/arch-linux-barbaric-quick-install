@@ -1,4 +1,13 @@
-# Usage: curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/arch_auto_installer_v2.sh && chmod +x arch_auto_installer_v2.sh && USERNAME=node PASSWORD=meat HOSTNAME=nodeos ./arch_auto_installer_v2.sh
+#bin/bash
+# run like this 
+# curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/arch_auto_installer_v2.sh
+# chmod +x arch_auto_installer_v2.sh
+#
+# export USERNAME=node
+# export PASSWORD=meat
+# export HOSTNAME=nodeos
+
+./arch_auto_installer_v2.sh
 # This script automates the installation of Arch Linux with a focus on simplicity and speed.
 # It is designed to be run from a live USB environment and will partition, format, and install the base system.
 
@@ -96,7 +105,10 @@ export PASSWORD
 export SSH_KEY
 
 # === Chroot setup ===
-env USERNAME="$USERNAME" PASSWORD="$PASSWORD" SSH_KEY="$SSH_KEY" arch-chroot /mnt /bin/bash -e <<EOF
+arch-chroot /mnt /bin/bash -e <<EOF
+export USERNAME="$USERNAME"
+export PASSWORD="$PASSWORD"
+export SSH_KEY="$SSH_KEY"
 echo "[*] Setting system clock and locale..."
 ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 hwclock --systohc
