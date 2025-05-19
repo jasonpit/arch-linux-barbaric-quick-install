@@ -24,6 +24,7 @@ LOCALE="en_US.UTF-8"
 KEYMAP="us"
 SWAP_SIZE="32G"
 
+echo "[debug] Detected USERNAME='$USERNAME'"
 if [[ "$USERNAME" == "root" || -z "$USERNAME" ]]; then
   echo "[!] Cannot use 'root' or empty string as a custom username. Please choose a different USERNAME."
   exit 1
@@ -137,6 +138,8 @@ export SWAP_SIZE="$SWAP_SIZE"
 export TIMEZONE="$TIMEZONE"
 export LOCALE="$LOCALE"
 export KEYMAP="$KEYMAP"
+
+echo "[debug] In chroot, USERNAME='$USERNAME'"
 echo "[*] Setting system clock and locale..."
 ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 hwclock --systohc
