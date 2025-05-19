@@ -29,10 +29,16 @@ exec > >(tee -a "$log") 2>&1
 
 echo "[*] Available disks:"
 lsblk -d -o NAME,SIZE,MODEL | grep -v loop
-echo -n "Enter the disk to install to (e.g., sda): "
-read -r DISK_INPUT
-DISK="/dev/$DISK_INPUT"
-echo "[+] Using disk: $DISK"
+
+if [[ -n "${DISK:-}" ]]; then
+  echo "[+] Using disk from environment: /dev/$DISK"
+else
+  echo -n "Enter the disk to install to (e.g., sda): "
+  read -r DISK
+fi
+
+DISK="/dev/${DISK}"
+echo "[+] Final disk selection: $DISK"
 
 echo "[*] Installing reflector and updating mirrorlist..."
 pacman -Sy --noconfirm reflector
