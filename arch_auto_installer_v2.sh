@@ -15,14 +15,14 @@ umount -R /mnt 2>/dev/null || true
 
 set -euo pipefail
 
-echo "[debug] Raw \$USERNAME='$USERNAME'"
+echo "[debug] Raw \$USERNAME='${USERNAME:-}'"
 echo "[debug] Raw \$EUID='$EUID'"
-if [[ -z "${USERNAME:-}" || "$USERNAME" == "root" ]]; then
-  echo "[!] USERNAME is invalid or defaulting to root. Current USERNAME='$USERNAME'"
-fi
 
 # === USER CONFIG ===
-USERNAME="${USERNAME:-${USERNAME}}"
+if [[ -z "${USERNAME:-}" || "${USERNAME}" == "root" ]]; then
+  echo "[!] Cannot use 'root' or empty string as a custom username. Please set a valid USERNAME env variable before running the script."
+  exit 1
+fi
 PASSWORD="${PASSWORD:-SuperSecurePassword123!}"
 HOSTNAME="${HOSTNAME:-archlinux}"
 TIMEZONE="America/Los_Angeles"
