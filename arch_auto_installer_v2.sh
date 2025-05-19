@@ -2,15 +2,15 @@
 echo "[info] Running arch_auto_installer_v2.sh version 2025-05-19-01"
 echo "[debug] Raw $USERNAME='${USERNAME:-unset}' $EUID='${EUID}' $SUDO_USER='${SUDO_USER:-unset}'"
 
-# Resolve USERNAME safely even in root login shell
-if [[ "${EUID}" -eq 0 ]]; then
-  if [[ -z "${USERNAME:-}" ]]; then
+# Respect explicitly exported USERNAME and fallback only if necessary
+if [[ -z "${USERNAME:-}" || "$USERNAME" == "root" ]]; then
+  if [[ "${EUID}" -eq 0 ]]; then
     if [[ -n "${SUDO_USER:-}" && "${SUDO_USER}" != "root" ]]; then
       USERNAME="$SUDO_USER"
     elif [[ -n "${USER:-}" && "${USER}" != "root" ]]; then
       USERNAME="$USER"
     else
-      echo "[!] USERNAME is not set. Please export USERNAME explicitly."
+      echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
       exit 1
     fi
   fi
