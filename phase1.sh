@@ -139,26 +139,3 @@ echo "[*] Entering chroot and running phase2.sh..."
 arch-chroot /mnt /root/phase2.sh
 
 echo "[*] Installation phase 1 complete."
-
----
-
-#!/bin/bash
-echo "This installer has been split into two phases."
-echo "Please run phase1.sh to start the installation process."
-echo "Phase 2 will be executed automatically inside the chroot."
-echo
-echo "Usage:"
-echo "  ./phase1.sh"
-echo
-echo "Make sure to set the following environment variables before running:"
-echo "  USERNAME - your desired username"
-echo "  PASSWORD - your desired password"
-echo "  HOSTNAME - your desired hostname"
-echo "  DISK     - target disk (e.g., sda)"
-echo
-echo "Example:"
-echo "  export USERNAME=john"
-echo "  export PASSWORD=MySecret123"
-echo "  export HOSTNAME=myarch"
-echo "  export DISK=sda"
-echo "  ./phase1.sh"
