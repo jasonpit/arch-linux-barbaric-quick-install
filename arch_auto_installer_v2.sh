@@ -184,4 +184,7 @@ EOF
 arch-chroot /mnt /tmp/setup-bootloader.sh
 rm /mnt/tmp/setup-bootloader.sh
 
+echo "[debug] USERNAME='$USERNAME'"
+env -i USERNAME="$USERNAME" PASSWORD="$PASSWORD" SSH_KEY="$SSH_KEY" DISK="$DISK" HOSTNAME="$HOSTNAME" HOME=/root TERM=$TERM PATH=/usr/bin:/usr/sbin:/bin:/sbin arch-chroot /mnt /finalize.sh
+
 echo "[✔] Arch install complete. Reboot when ready."
