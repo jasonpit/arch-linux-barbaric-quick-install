@@ -19,13 +19,11 @@ SWAP_SIZE="2G"
 log="/mnt/install.log"
 exec > >(tee -a "$log") 2>&1
 
-# === Detect disk ===
-echo "[*] Detecting primary disk..."
-DISK=$(lsblk -ndo NAME,TYPE | awk '$2=="disk" {print "/dev/"$1; exit}')
-EFI_PART="${DISK}1"
-ROOT_PART="${DISK}2"
-
-
+echo "[*] Available disks:"
+lsblk -d -o NAME,SIZE,MODEL | grep -v loop
+echo -n "Enter the disk to install to (e.g., sda): "
+read -r DISK_INPUT
+DISK="/dev/$DISK_INPUT"
 echo "[+] Using disk: $DISK"
 
 echo "[*] Installing reflector and updating mirrorlist..."
@@ -38,11 +36,21 @@ read -r SSH_KEY
 
 # === Partition disk ===
 echo "[*] Partitioning $DISK..."
+echo "[*] Wiping existing filesystem signatures..."
+wipefs -a "$DISK"
+echo "[*] Zapping GPT and partition table..."
 sgdisk --zap-all "$DISK"
+dd if=/dev/zero of="$DISK" bs=1M count=100 status=progress
+partprobe "$DISK"
+sleep 2
 sgdisk -n 1:0:+512M -t 1:ef00 -c 1:"EFI System" "$DISK"
 sgdisk -n 2:0:0     -t 2:8300 -c 2:"Linux Root" "$DISK"
 partprobe "$DISK"
 sleep 2
+
+# Assign partition variables after partitioning
+EFI_PART="${DISK}1"
+ROOT_PART="${DISK}2"
 
 # === Format and mount ===
 mkfs.vfat -F32 "$EFI_PART"
@@ -88,6 +96,7 @@ echo "$LOCALE UTF-8" > /etc/locale.gen
 locale-gen
 echo "LANG=$LOCALE" > /etc/locale.conf
 echo "KEYMAP=$KEYMAP" > /etc/vconsole.conf
+echo "FONT=ter-v16n" >> /etc/vconsole.conf
 
 echo "$HOSTNAME" > /etc/hostname
 echo "127.0.0.1 localhost" >> /etc/hosts
@@ -107,8 +116,8 @@ echo "[*] Installing and enabling SSH..."
 pacman -Sy --noconfirm openssh
 systemctl enable sshd
 
-if [ "$USERNAME" = "root" ]; then
-  echo "[!] Cannot use 'root' as a custom username. Please choose a different USERNAME."
+if [[ "$USERNAME" == "root" || -z "$USERNAME" ]]; then
+  echo "[!] Cannot use 'root' or empty string as a custom username. Please choose a different USERNAME."
   exit 1
 fi
 
@@ -128,6 +137,7 @@ fi
 echo "[*] Installing systemd-boot..."
 bootctl --path=/boot install
 echo "[*] Copying fallback BOOTX64.EFI..."
+mkdir -p /boot/EFI/BOOT
 cp -f /boot/EFI/systemd/systemd-bootx64.efi /boot/EFI/BOOT/BOOTX64.EFI
 
 mkinitcpio -P
