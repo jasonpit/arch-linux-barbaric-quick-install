@@ -7,7 +7,6 @@
 # export PASSWORD=meat
 # export HOSTNAME=nodeos
 
-./arch_auto_installer_v2.sh
 # This script automates the installation of Arch Linux with a focus on simplicity and speed.
 # It is designed to be run from a live USB environment and will partition, format, and install the base system.
 
