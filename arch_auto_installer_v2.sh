@@ -1,5 +1,24 @@
 #!/bin/bash
-echo "[debug] \$USERNAME='$USERNAME' \$EUID='$EUID' \$SUDO_USER='${SUDO_USER:-unset}'"
+echo "[info] Running arch_auto_installer_v2.sh version 2025-05-19-01"
+echo "[debug] Raw $USERNAME='${USERNAME:-unset}' $EUID='${EUID}' $SUDO_USER='${SUDO_USER:-unset}'"
+
+# Detect and override USERNAME if needed
+if [[ -z "${USERNAME:-}" || "${USERNAME}" == "root" ]]; then
+  if [[ -n "${SUDO_USER:-}" && "${SUDO_USER}" != "root" ]]; then
+    USERNAME="$SUDO_USER"
+  elif [[ -n "${USER:-}" && "${USER}" != "root" ]]; then
+    USERNAME="$USER"
+  fi
+fi
+
+if [[ -z "${USERNAME:-}" || "${USERNAME}" == "root" ]]; then
+  echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
+  echo "[debug] USERNAME='${USERNAME:-unset}'"
+  exit 1
+fi
+
+echo "[debug] Final resolved USERNAME='$USERNAME'"
+
 # run like this 
 # curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/arch_auto_installer_v2.sh
 # chmod +x arch_auto_installer_v2.sh
@@ -15,24 +34,6 @@ echo "[debug] \$USERNAME='$USERNAME' \$EUID='$EUID' \$SUDO_USER='${SUDO_USER:-un
 umount -R /mnt 2>/dev/null || true
 
 set -euo pipefail
-
-# Source environment variables if running directly
-if [[ -z "${USERNAME:-}" ]]; then
-  if [[ -n "${SUDO_USER:-}" ]]; then
-    USERNAME="$SUDO_USER"
-  elif [[ -n "$USER" && "$EUID" -ne 0 ]]; then
-    USERNAME="$USER"
-  fi
-fi
-
-# Validate that USERNAME is set and not "root"
-if [[ -z "${USERNAME:-}" || "${USERNAME}" == "root" ]]; then
-  echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
-  echo "[debug] USERNAME='${USERNAME:-unset}'"
-  exit 1
-fi
-
-echo "[debug] Raw \$USERNAME='$USERNAME'"
 
 # === USER CONFIG ===
 PASSWORD="${PASSWORD:-SuperSecurePassword123!}"
