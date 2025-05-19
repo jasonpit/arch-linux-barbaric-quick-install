@@ -15,15 +15,17 @@ umount -R /mnt 2>/dev/null || true
 
 set -euo pipefail
 
-USERNAME="${USERNAME:-$SUDO_USER}"
+if [[ "${USERNAME:-}" == "" || "${USERNAME:-}" == "root" ]]; then
+  if [[ "$EUID" -eq 0 && -n "$SUDO_USER" && "$SUDO_USER" != "root" ]]; then
+    USERNAME="$SUDO_USER"
+  else
+    echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
+    exit 1
+  fi
+fi
 echo "[debug] Raw \$USERNAME='$USERNAME'"
 
-#
 # === USER CONFIG ===
-if [[ "$USERNAME" == "" || "$USERNAME" == "root" ]]; then
-  echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
-  exit 1
-fi
 PASSWORD="${PASSWORD:-SuperSecurePassword123!}"
 HOSTNAME="${HOSTNAME:-archlinux}"
 TIMEZONE="America/Los_Angeles"
