@@ -1,4 +1,5 @@
 #!/bin/bash
+echo "[debug] \$USERNAME='$USERNAME' \$EUID='$EUID' \$SUDO_USER='${SUDO_USER:-unset}'"
 # run like this 
 # curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/arch_auto_installer_v2.sh
 # chmod +x arch_auto_installer_v2.sh
@@ -16,8 +17,12 @@ umount -R /mnt 2>/dev/null || true
 set -euo pipefail
 
 # Source environment variables if running directly
-if [[ -z "${USERNAME:-}" && -n "${SUDO_USER:-}" ]]; then
-  USERNAME="$SUDO_USER"
+if [[ -z "${USERNAME:-}" ]]; then
+  if [[ -n "${SUDO_USER:-}" ]]; then
+    USERNAME="$SUDO_USER"
+  elif [[ -n "$USER" && "$EUID" -ne 0 ]]; then
+    USERNAME="$USER"
+  fi
 fi
 
 # Validate that USERNAME is set and not "root"
