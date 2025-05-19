@@ -15,9 +15,15 @@ umount -R /mnt 2>/dev/null || true
 
 set -euo pipefail
 
+# Source environment variables if running directly
+if [[ -z "${USERNAME:-}" && -n "${SUDO_USER:-}" ]]; then
+  USERNAME="$SUDO_USER"
+fi
+
 # Validate that USERNAME is set and not "root"
 if [[ -z "${USERNAME:-}" || "${USERNAME}" == "root" ]]; then
   echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
+  echo "[debug] USERNAME='${USERNAME:-unset}'"
   exit 1
 fi
 
