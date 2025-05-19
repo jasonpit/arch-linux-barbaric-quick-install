@@ -91,8 +91,12 @@ EOS
 
 chmod +x /mnt/tmp/setup-bootloader.sh
 
+export USERNAME
+export PASSWORD
+export SSH_KEY
+
 # === Chroot setup ===
-arch-chroot /mnt /bin/bash -e <<EOF
+env USERNAME="$USERNAME" PASSWORD="$PASSWORD" SSH_KEY="$SSH_KEY" arch-chroot /mnt /bin/bash -e <<EOF
 echo "[*] Setting system clock and locale..."
 ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 hwclock --systohc
