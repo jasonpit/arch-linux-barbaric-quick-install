@@ -16,11 +16,15 @@ umount -R /mnt 2>/dev/null || true
 set -euo pipefail
 
 echo "[debug] Raw \$USERNAME='${USERNAME:-}'"
+if [[ "$EUID" -eq 0 && "${USERNAME:-}" != "" ]]; then
+  echo "[debug] EUID is 0, but USERNAME was explicitly passed as '$USERNAME'"
+fi
 echo "[debug] Raw \$EUID='$EUID'"
 
+#
 # === USER CONFIG ===
-if [[ -z "${USERNAME:-}" || "${USERNAME}" == "root" ]]; then
-  echo "[!] Cannot use 'root' or empty string as a custom username. Please set a valid USERNAME env variable before running the script."
+if [[ "${USERNAME:-}" == "" || "${USERNAME}" == "root" ]]; then
+  echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
   exit 1
 fi
 PASSWORD="${PASSWORD:-SuperSecurePassword123!}"
@@ -31,8 +35,8 @@ KEYMAP="us"
 SWAP_SIZE="32G"
 
 echo "[debug] Detected effective USERNAME='$USERNAME'"
-if [[ -z "$USERNAME" || "$USERNAME" == "root" ]]; then
-  echo "[!] Cannot use 'root' or empty string as a custom username. Please set a valid USERNAME env variable before running the script."
+if [[ "$USERNAME" == "" || "$USERNAME" == "root" ]]; then
+  echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
   exit 1
 fi
 
@@ -174,8 +178,8 @@ echo "[*] Installing and enabling SSH..."
 pacman -Sy --noconfirm openssh
 systemctl enable sshd
 
-if [[ "$USERNAME" == "root" || -z "$USERNAME" ]]; then
-  echo "[!] Cannot use 'root' or empty string as a custom username. Please choose a different USERNAME."
+if [[ "$USERNAME" == "" || "$USERNAME" == "root" ]]; then
+  echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
   exit 1
 fi
 
