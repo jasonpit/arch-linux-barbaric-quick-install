@@ -1,19 +1,11 @@
 #!/bin/bash
 echo "[info] Running arch_auto_installer_v2.sh version 2025-05-19-01"
-echo "[debug] Raw $USERNAME='${USERNAME:-unset}' $EUID='${EUID}' $SUDO_USER='${SUDO_USER:-unset}'"
+echo "[debug] Raw USERNAME='${USERNAME:-unset}' EUID='${EUID}' SUDO_USER='${SUDO_USER:-unset}' USER='${USER:-unset}'"
 
-# Respect explicitly exported USERNAME and fallback only if necessary
-if [[ -z "${USERNAME:-}" || "$USERNAME" == "root" ]]; then
-  if [[ "${EUID}" -eq 0 ]]; then
-    if [[ -n "${SUDO_USER:-}" && "${SUDO_USER}" != "root" ]]; then
-      USERNAME="$SUDO_USER"
-    elif [[ -n "${USER:-}" && "${USER}" != "root" ]]; then
-      USERNAME="$USER"
-    else
-      echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
-      exit 1
-    fi
-  fi
+# Prevent running with or creating 'root' user
+if [[ -z "${USERNAME:-}" || "${USERNAME}" == "root" ]]; then
+  echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
+  exit 1
 fi
 
 if [[ "$USERNAME" == "root" ]]; then
