@@ -101,7 +101,7 @@ echo "[*] Setting system clock and locale..."
 ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 hwclock --systohc
 
-echo "$LOCALE UTF-8" > /etc/locale.gen
+echo "$LOCALE UTF-8" >> /etc/locale.gen
 locale-gen
 echo "LANG=$LOCALE" > /etc/locale.conf
 echo "KEYMAP=$KEYMAP" > /etc/vconsole.conf
