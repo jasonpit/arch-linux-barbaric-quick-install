@@ -1,50 +1,14 @@
 #!/bin/bash
-echo "[info] Running arch_auto_installer_v2.sh version 2025-05-19-01"
-echo "[debug] Raw USERNAME='${USERNAME:-unset}' EUID='${EUID}' SUDO_USER='${SUDO_USER:-unset}' USER='${USER:-unset}'"
-
-# Prevent running with or creating 'root' user
-if [[ -z "${USERNAME:-}" || "${USERNAME}" == "root" ]]; then
-  echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
-  exit 1
-fi
-
-if [[ "$USERNAME" == "root" ]]; then
-  echo "[!] USERNAME cannot be 'root'. Please choose a non-root username."
-  exit 1
-fi
-
-echo "[debug] Final resolved USERNAME='$USERNAME'"
-
-# run like this 
-# curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/arch_auto_installer_v2.sh
-# chmod +x arch_auto_installer_v2.sh
-#
-# export USERNAME=username
-# export PASSWORD=password
-# export HOSTNAME=arch
-
-# This script automates the installation of Arch Linux with a focus on simplicity and speed.
-# It is designed to be run from a live USB environment and will partition, format, and install the base system.
-
-# Clean any existing mounts to avoid errors on rerun
-umount -R /mnt 2>/dev/null || true
+echo "[info] Running phase1.sh version 2025-05-19-01"
 
 set -euo pipefail
 
-# === USER CONFIG ===
 PASSWORD="${PASSWORD:-SuperSecurePassword123!}"
 HOSTNAME="${HOSTNAME:-archlinux}"
-TIMEZONE="America/Los_Angeles"
-LOCALE="en_US.UTF-8"
-KEYMAP="us"
-SWAP_SIZE="32G"
-
-echo "[debug] Detected effective USERNAME='$USERNAME'"
 
 log="/mnt/install.log"
 exec > >(tee -a "$log") 2>&1
 
-# === Disk selection ===
 echo "[*] Available disks:"
 lsblk -d -o NAME,SIZE,MODEL | grep -v loop
 
@@ -58,16 +22,13 @@ fi
 DISK="/dev/${DISK}"
 echo "[+] Final disk selection: $DISK"
 
-# === Mirrorlist update ===
 echo "[*] Installing reflector and updating mirrorlist..."
 pacman -Sy --noconfirm reflector
 reflector --country US --latest 10 --sort rate --protocol https --save /etc/pacman.d/mirrorlist
 
-# === SSH Key (optional) ===
 echo -n "Paste your SSH public key (or leave blank to skip): "
 read -r SSH_KEY
 
-# === Partition disk ===
 echo "[*] Partitioning $DISK..."
 echo "[*] Wiping existing filesystem signatures..."
 wipefs -a "$DISK"
@@ -81,7 +42,123 @@ sgdisk -n 2:0:0     -t 2:8300 -c 2:"Linux Root" "$DISK"
 partprobe "$DISK"
 sleep 2
 
-# Assign partition variables after partitioning
 if [[ "$DISK" == *"nvme"* ]]; then
   EFI_PART="${DISK}p1"
   ROOT_PART="${DISK}p2"
+else
+  EFI_PART="${DISK}1"
+  ROOT_PART="${DISK}2"
+fi
+
+echo "[*] Formatting partitions..."
+mkfs.fat -F32 "$EFI_PART"
+mkfs.ext4 "$ROOT_PART"
+
+echo "[*] Mounting partitions..."
+mount "$ROOT_PART" /mnt
+mkdir -p /mnt/boot
+mount "$EFI_PART" /mnt/boot
+
+echo "[*] Installing base system..."
+pacstrap /mnt base linux linux-firmware sudo networkmanager openssh
+
+if [[ -n "$SSH_KEY" ]]; then
+  mkdir -p /mnt/root/.ssh
+  echo "$SSH_KEY" >> /mnt/root/.ssh/authorized_keys
+  chmod 600 /mnt/root/.ssh/authorized_keys
+fi
+
+echo "[*] Generating fstab..."
+genfstab -U /mnt >> /mnt/etc/fstab
+
+echo "[*] Copying phase2.sh to /mnt/root/phase2.sh..."
+cat > /mnt/root/phase2.sh << 'EOF'
+#!/bin/bash
+set -euo pipefail
+
+TIMEZONE="America/Los_Angeles"
+LOCALE="en_US.UTF-8"
+KEYMAP="us"
+HOSTNAME="${HOSTNAME}"
+USERNAME="${USERNAME}"
+PASSWORD="${PASSWORD}"
+
+echo "[*] Setting timezone..."
+ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+hwclock --systohc
+
+echo "[*] Configuring locale..."
+echo "$LOCALE UTF-8" > /etc/locale.gen
+locale-gen
+echo "LANG=$LOCALE" > /etc/locale.conf
+
+echo "[*] Setting hostname..."
+echo "$HOSTNAME" > /etc/hostname
+echo "127.0.0.1 localhost" >> /etc/hosts
+echo "::1       localhost" >> /etc/hosts
+echo "127.0.1.1 $HOSTNAME.localdomain $HOSTNAME" >> /etc/hosts
+
+echo "[*] Creating user '$USERNAME'..."
+useradd -m -G wheel -s /bin/bash "$USERNAME"
+echo "$USERNAME:$PASSWORD" | chpasswd
+
+echo "[*] Setting root password..."
+echo "root:$PASSWORD" | chpasswd
+
+echo "[*] Enabling sudo for wheel group..."
+sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+
+echo "[*] Enabling NetworkManager and SSH services..."
+systemctl enable NetworkManager
+systemctl enable sshd
+
+echo "[*] Installing systemd-boot bootloader..."
+bootctl --path=/boot install
+
+echo "[*] Creating loader entry..."
+cat > /boot/loader/loader.conf << EOF2
+default arch
+timeout 3
+console-mode max
+editor no
+EOF2
+
+cat > /boot/loader/entries/arch.conf << EOF2
+title   Arch Linux
+linux   /vmlinuz-linux
+initrd  /initramfs-linux.img
+options root=PARTUUID=$(blkid -s PARTUUID -o value $ROOT_PART) rw
+EOF2
+
+echo "[*] Phase 2 complete. Exiting chroot."
+EOF
+
+chmod +x /mnt/root/phase2.sh
+
+echo "[*] Entering chroot and running phase2.sh..."
+arch-chroot /mnt /root/phase2.sh
+
+echo "[*] Installation phase 1 complete."
+
+---
+
+#!/bin/bash
+echo "This installer has been split into two phases."
+echo "Please run phase1.sh to start the installation process."
+echo "Phase 2 will be executed automatically inside the chroot."
+echo
+echo "Usage:"
+echo "  ./phase1.sh"
+echo
+echo "Make sure to set the following environment variables before running:"
+echo "  USERNAME - your desired username"
+echo "  PASSWORD - your desired password"
+echo "  HOSTNAME - your desired hostname"
+echo "  DISK     - target disk (e.g., sda)"
+echo
+echo "Example:"
+echo "  export USERNAME=john"
+echo "  export PASSWORD=MySecret123"
+echo "  export HOSTNAME=myarch"
+echo "  export DISK=sda"
+echo "  ./phase1.sh"
