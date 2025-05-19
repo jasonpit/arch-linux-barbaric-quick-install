@@ -13,12 +13,11 @@
 # Clean any existing mounts to avoid errors on rerun
 umount -R /mnt 2>/dev/null || true
 
-set -euo pipefail
+if [[ -z "${USERNAME:-}" || "${USERNAME}" == "root" ]]; then
+  echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
+  exit 1
+fi
 
-if [[ "${USERNAME:-}" == "" || "${USERNAME}" == "root" ]]; then
-  if [[ "$EUID" -eq 0 ]]; then
-    if [[ -n "${SUDO_USER:-}" && "${SUDO_USER}" != "root" ]]; then
-      USERNAME="$SUDO_USER"
     else
       echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
       exit 1
