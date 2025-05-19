@@ -22,7 +22,7 @@ HOSTNAME="${HOSTNAME:-archlinux}"
 TIMEZONE="America/Los_Angeles"
 LOCALE="en_US.UTF-8"
 KEYMAP="us"
-SWAP_SIZE="2G"
+SWAP_SIZE="32G"
 
 log="/mnt/install.log"
 exec > >(tee -a "$log") 2>&1
@@ -111,10 +111,25 @@ export SSH_KEY
 
 # === Chroot setup ===
 echo "[debug] Entering chroot with USERNAME='$USERNAME'"
-arch-chroot /mnt /usr/bin/env -i USERNAME="$USERNAME" PASSWORD="$PASSWORD" SSH_KEY="$SSH_KEY" bash -e <<'EOF'
+arch-chroot /mnt /usr/bin/env -i \
+  USERNAME="$USERNAME" \
+  PASSWORD="$PASSWORD" \
+  SSH_KEY="$SSH_KEY" \
+  HOSTNAME="$HOSTNAME" \
+  SWAP_SIZE="$SWAP_SIZE" \
+  TIMEZONE="$TIMEZONE" \
+  LOCALE="$LOCALE" \
+  KEYMAP="$KEYMAP" \
+  HOME=/root TERM=$TERM PATH=/usr/bin:/usr/sbin:/bin:/sbin \
+  bash -e <<'EOF'
 export USERNAME="$USERNAME"
 export PASSWORD="$PASSWORD"
 export SSH_KEY="$SSH_KEY"
+export HOSTNAME="$HOSTNAME"
+export SWAP_SIZE="$SWAP_SIZE"
+export TIMEZONE="$TIMEZONE"
+export LOCALE="$LOCALE"
+export KEYMAP="$KEYMAP"
 echo "[*] Setting system clock and locale..."
 ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
 hwclock --systohc
