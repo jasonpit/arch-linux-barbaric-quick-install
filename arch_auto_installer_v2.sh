@@ -3,9 +3,9 @@
 # curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/arch_auto_installer_v2.sh
 # chmod +x arch_auto_installer_v2.sh
 #
-# export USERNAME=node
-# export PASSWORD=meat
-# export HOSTNAME=nodeos
+# export USERNAME=username
+# export PASSWORD=password
+# export HOSTNAME=arch
 
 # This script automates the installation of Arch Linux with a focus on simplicity and speed.
 # It is designed to be run from a live USB environment and will partition, format, and install the base system.
