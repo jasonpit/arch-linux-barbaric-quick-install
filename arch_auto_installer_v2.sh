@@ -2,8 +2,8 @@
 echo "[info] Running arch_auto_installer_v2.sh version 2025-05-19-01"
 echo "[debug] Raw $USERNAME='${USERNAME:-unset}' $EUID='${EUID}' $SUDO_USER='${SUDO_USER:-unset}'"
 
-USERNAME="${USERNAME:-}"
-if [[ -z "$USERNAME" || "$USERNAME" == "root" ]]; then
+# Resolve USERNAME safely even in root login shell
+if [[ -z "${USERNAME:-}" || "${USERNAME}" == "root" ]]; then
   if [[ -n "${SUDO_USER:-}" && "${SUDO_USER}" != "root" ]]; then
     USERNAME="$SUDO_USER"
   elif [[ -n "${USER:-}" && "${USER}" != "root" ]]; then
@@ -11,7 +11,8 @@ if [[ -z "$USERNAME" || "$USERNAME" == "root" ]]; then
   fi
 fi
 
-if [[ -z "$USERNAME" || "$USERNAME" == "root" ]]; then
+# If still empty or 'root', check exported env directly
+if [[ -z "${USERNAME}" || "${USERNAME}" == "root" ]]; then
   echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
   echo "[debug] USERNAME='${USERNAME:-unset}'"
   exit 1
