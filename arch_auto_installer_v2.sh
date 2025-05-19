@@ -15,7 +15,7 @@ umount -R /mnt 2>/dev/null || true
 
 set -euo pipefail
 
-USERNAME="${USERNAME:-}"
+USERNAME="${USERNAME:-$SUDO_USER}"
 echo "[debug] Raw \$USERNAME='$USERNAME'"
 
 #
@@ -32,10 +32,6 @@ KEYMAP="us"
 SWAP_SIZE="32G"
 
 echo "[debug] Detected effective USERNAME='$USERNAME'"
-if [[ "$USERNAME" == "" || "$USERNAME" == "root" ]]; then
-  echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
-  exit 1
-fi
 
 log="/mnt/install.log"
 exec > >(tee -a "$log") 2>&1
