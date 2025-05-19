@@ -24,9 +24,15 @@ LOCALE="en_US.UTF-8"
 KEYMAP="us"
 SWAP_SIZE="32G"
 
+if [[ "$USERNAME" == "root" || -z "$USERNAME" ]]; then
+  echo "[!] Cannot use 'root' or empty string as a custom username. Please choose a different USERNAME."
+  exit 1
+fi
+
 log="/mnt/install.log"
 exec > >(tee -a "$log") 2>&1
 
+# === Disk selection ===
 echo "[*] Available disks:"
 lsblk -d -o NAME,SIZE,MODEL | grep -v loop
 
@@ -40,6 +46,7 @@ fi
 DISK="/dev/${DISK}"
 echo "[+] Final disk selection: $DISK"
 
+# === Mirrorlist update ===
 echo "[*] Installing reflector and updating mirrorlist..."
 pacman -Sy --noconfirm reflector
 reflector --country US --latest 10 --sort rate --protocol https --save /etc/pacman.d/mirrorlist
