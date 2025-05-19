@@ -15,9 +15,14 @@ umount -R /mnt 2>/dev/null || true
 
 set -euo pipefail
 
-if [[ "${USERNAME:-}" == "" || "${USERNAME:-}" == "root" ]]; then
-  if [[ "$EUID" -eq 0 && -n "$SUDO_USER" && "$SUDO_USER" != "root" ]]; then
-    USERNAME="$SUDO_USER"
+if [[ "${USERNAME:-}" == "" || "${USERNAME}" == "root" ]]; then
+  if [[ "$EUID" -eq 0 ]]; then
+    if [[ -n "${SUDO_USER:-}" && "${SUDO_USER}" != "root" ]]; then
+      USERNAME="$SUDO_USER"
+    else
+      echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
+      exit 1
+    fi
   else
     echo "[!] USERNAME is either empty or explicitly set to 'root' — this is not allowed."
     exit 1
