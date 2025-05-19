@@ -110,7 +110,8 @@ export PASSWORD
 export SSH_KEY
 
 # === Chroot setup ===
-arch-chroot /mnt /bin/bash -e <<EOF
+echo "[debug] Entering chroot with USERNAME='$USERNAME'"
+arch-chroot /mnt /usr/bin/env -i USERNAME="$USERNAME" PASSWORD="$PASSWORD" SSH_KEY="$SSH_KEY" bash -e <<'EOF'
 export USERNAME="$USERNAME"
 export PASSWORD="$PASSWORD"
 export SSH_KEY="$SSH_KEY"
