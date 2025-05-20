@@ -6,10 +6,15 @@ This script fully automates the installation of Arch Linux with:
 
 - Disk partitioning (GPT, UEFI)
 - Swap file creation
-- Systemd-boot installation and fallback bootloader setup
-- SSH configuration (enabled on first boot)
-- NetworkManager setup
-- User creation (non-root)
+- Arch keyring refresh to avoid PGP signature errors
+- Mirrorlist updates using reflector
+- System locale, timezone, and hostname configuration
+- Root password setup
+- Automatic user creation (if `USERNAME` is not root)
+- Enables SSH and NetworkManager services via systemd
+- Installs systemd-boot with proper loader entry
+- Handles possible firmware warnings gracefully
+- Secure random seed warning notification
 
 ---
 
@@ -18,9 +23,13 @@ This script fully automates the installation of Arch Linux with:
 Run this script inside an Arch ISO shell or over SSH:
 
 ```bash
-curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/arch_auto_installer_v2.sh
-chmod +x arch_auto_installer_v2.sh
-USERNAME=node PASSWORD=meat HOSTNAME=nodeos ./arch_auto_installer_v2.sh
+curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/phase1.sh
+chmod +x phase1.sh
+export USERNAME=archuser
+export PASSWORD=SuperSecurePassword123!
+export HOSTNAME=archlinux
+export DISK=nvme0n1
+./phase1.sh
 ```
 
 **IMPORTANT:** Do not use `USERNAME=root`. The script will abort to prevent login issues.
@@ -28,6 +37,9 @@ USERNAME=node PASSWORD=meat HOSTNAME=nodeos ./arch_auto_installer_v2.sh
 ---
 
 ## Recovery + Confirmation (after install)
+
+If you run into a keyring or package integrity issue, try:
+pacman -Sy archlinux-keyring --noconfirm
 
 If you reboot and land in the UEFI shell or cannot log in, follow these steps:
 
@@ -69,6 +81,8 @@ reboot
 
 You should now boot into a fully configured Arch system with SSH access and `node` as your user.
 
+⚠️ Note: If you receive random seed or font warnings, they are non-blocking and can be addressed post-install.
+
 ---
 
 ## Features
@@ -76,6 +90,11 @@ You should now boot into a fully configured Arch system with SSH access and `nod
 - Auto-detects primary disk
 - Sets up fast mirrors using `reflector`
 - Installs base Arch with Zsh
-- Enables systemd-networkd with `NetworkManager`
+- Enables `NetworkManager` via systemd
 - Includes optional SSH key input during install
 - Configures systemd-boot and fallback bootloader path
+- Installs `openssh` and enables the SSH service
+- Uses systemd-boot as the bootloader
+- Includes fallback initramfs generation
+- Automatically mounts partitions and generates fstab
+- Optionally copies in your public SSH key during setup

@@ -1,57 +1,54 @@
 #!/bin/bash
-## This script verifies the installation of Arch Linux and checks for common issues.
-## It is designed to be run after the installation script to ensure everything is set up correctly. 
-## curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/verify_install.sh && chmod +x verify_install.sh && ./verify_install.sh
 
+GUI=true
+if [[ "${1:-}" == "--headless" ]]; then
+    GUI=false
+fi
 
-set -euo pipefail
+# ... (other setup steps before GUI installation)
 
-print_header() {
-  echo -e "\n==== $1 ===="
-}
+if $GUI; then
+    GUI_PACKAGES="xorg-server openbox tint2 lxterminal lightdm lightdm-gtk-greeter"
+    sudo pacman -Sy --noconfirm $GUI_PACKAGES
 
-check_cmd() {
-  if "$@" > /dev/null 2>&1; then
-    echo "[PASS] $*"
-  else
-    echo "[FAIL] $*"
-  fi
-}
+    AUTOSTART_PATH="$HOME/.config/openbox/autostart"
+    XINITRC_PATH="$HOME/.xinitrc"
 
-print_header "Network Connectivity"
-check_cmd ping -c 1 archlinux.org
+    if [ ! -f "$AUTOSTART_PATH" ]; then
+        mkdir -p "$(dirname "$AUTOSTART_PATH")"
+        cat > "$AUTOSTART_PATH" <<'EOF'
+#!/bin/bash
+xsetroot -solid grey
+lxterminal &
+tint2 &
+if command -v xinput &>/dev/null; then
+    xinput --map-to-output "$(xinput list --name-only | grep -i touch)" "$(xrandr | grep ' connected' | cut -f1 -d ' ')"
+fi
+carla-rack ~/carla-default.carxp &
+EOF
+        chmod +x "$AUTOSTART_PATH"
+    else
+        echo "[!] Skipping autostart setup, file already exists."
+    fi
 
-print_header "Disk Space Check"
-df -h /
+    if [ ! -f "$XINITRC_PATH" ]; then
+        echo "exec openbox-session" > "$XINITRC_PATH"
+    else
+        echo "[!] Skipping .xinitrc setup, file already exists."
+    fi
 
-print_header "Filesystem Mounts"
-findmnt | grep -E '/$|/boot|/home'
+    echo "[*] Enabling LightDM GUI login manager..."
+    if systemctl enable lightdm.service; then
+        echo "[+] LightDM enabled successfully."
+    else
+        echo "[!] Failed to enable LightDM."
+    fi
+fi
 
-print_header "systemd-boot Installed"
-check_cmd bootctl is-installed
+# ... (other setup steps after GUI installation)
 
-print_header "/etc/fstab Check"
-check_cmd test -s /etc/fstab && cat /etc/fstab
-
-print_header "Hostname"
-hostnamectl
-
-print_header "User archadmin Exists"
-check_cmd id archadmin
-
-print_header "archadmin Sudo Permissions"
-check_cmd sudo -l -U archadmin
-
-print_header "SSHD Service Status"
-check_cmd systemctl is-active sshd
-
-print_header "Systemd Boot Target"
-check_cmd systemctl get-default
-
-print_header "Essential Packages"
-for pkg in vim sudo openssh base; do
-  check_cmd pacman -Q $pkg
-done
-
-print_header "All checks complete"
-echo "System baseline looks clean. Ready to move on to setup."
+if $GUI; then
+    echo "[*] Setup completed with GUI enabled."
+else
+    echo "[*] Setup completed in headless mode."
+fi
