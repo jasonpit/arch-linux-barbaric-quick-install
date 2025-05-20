@@ -25,16 +25,23 @@ echo "127.0.1.1 $HOSTNAME.localdomain $HOSTNAME" >> /etc/hosts
 echo "[*] Setting root password..."
 echo "root:$PASSWORD" | chpasswd
 
-# Root user already exists; password has been set above.
-
 echo "[*] Creating user '$USERNAME'..."
 id "$USERNAME" &>/dev/null || useradd -m -G wheel -s /bin/bash "$USERNAME"
 echo "$USERNAME:$PASSWORD" | chpasswd
 
 sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 
-systemctl enable NetworkManager || echo "⚠️ NetworkManager not installed; skipping enable step."
-systemctl enable sshd || echo "⚠️ sshd not installed; skipping enable step."
+if [ -f /usr/lib/systemd/system/NetworkManager.service ]; then
+  systemctl enable NetworkManager
+else
+  echo "⚠️ NetworkManager service not found; skipping."
+fi
+
+if [ -f /usr/lib/systemd/system/sshd.service ]; then
+  systemctl enable sshd
+else
+  echo "⚠️ sshd service not found; skipping."
+fi
 
 bootctl --path=/boot install
 
