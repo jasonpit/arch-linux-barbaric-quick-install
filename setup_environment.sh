@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # setup_environment.sh - Configures system environment, optionally installs GUI (Openbox + LightDM), or runs headless mode.
-
+# # curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/setup_environment.sh chmod +x setup_environment.sh
 # Determine whether to install GUI components based on the --headless flag
 GUI=true
 if [[ "${1:-}" == "--headless" ]]; then
