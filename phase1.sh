@@ -72,7 +72,7 @@ echo "[*] Generating fstab..."
 genfstab -U /mnt >> /mnt/etc/fstab
 
 echo "[*] Copying phase2.sh to /mnt/root/phase2.sh..."
-cat > /mnt/root/phase2.sh << 'EOF'
+cat > /mnt/root/phase2.sh << EOF
 #!/bin/bash
 set -euo pipefail
 
@@ -84,26 +84,26 @@ USERNAME="${USERNAME}"
 PASSWORD="${PASSWORD}"
 
 echo "[*] Setting timezone..."
-ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+ln -sf /usr/share/zoneinfo/\$TIMEZONE /etc/localtime
 hwclock --systohc
 
 echo "[*] Configuring locale..."
-echo "$LOCALE UTF-8" > /etc/locale.gen
+echo "\$LOCALE UTF-8" > /etc/locale.gen
 locale-gen
-echo "LANG=$LOCALE" > /etc/locale.conf
+echo "LANG=\$LOCALE" > /etc/locale.conf
 
 echo "[*] Setting hostname..."
-echo "$HOSTNAME" > /etc/hostname
+echo "\$HOSTNAME" > /etc/hostname
 echo "127.0.0.1 localhost" >> /etc/hosts
 echo "::1       localhost" >> /etc/hosts
-echo "127.0.1.1 $HOSTNAME.localdomain $HOSTNAME" >> /etc/hosts
+echo "127.0.1.1 \$HOSTNAME.localdomain \$HOSTNAME" >> /etc/hosts
 
-echo "[*] Creating user '$USERNAME'..."
-useradd -m -G wheel -s /bin/bash "$USERNAME"
-echo "$USERNAME:$PASSWORD" | chpasswd
+echo "[*] Creating user '\$USERNAME'..."
+useradd -m -G wheel -s /bin/bash "\$USERNAME"
+echo "\$USERNAME:\$PASSWORD" | chpasswd
 
 echo "[*] Setting root password..."
-echo "root:$PASSWORD" | chpasswd
+echo "root:\$PASSWORD" | chpasswd
 
 echo "[*] Enabling sudo for wheel group..."
 sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
@@ -127,7 +127,7 @@ cat > /boot/loader/entries/arch.conf << EOF2
 title   Arch Linux
 linux   /vmlinuz-linux
 initrd  /initramfs-linux.img
-options root=PARTUUID=$(blkid -s PARTUUID -o value $ROOT_PART) rw
+options root=PARTUUID=\$(blkid -s PARTUUID -o value $ROOT_PART) rw
 EOF2
 
 echo "[*] Phase 2 complete. Exiting chroot."
