@@ -1,4 +1,12 @@
 #!/bin/bash
+# JasonPit 2025
+# Arch Linux Babarick installation script -
+# This script is designed to automate the installation of Arch Linux.
+# It performs the initial setup, including partitioning, formatting, and installing the base system.
+# It is intended to be run from a live Arch Linux environment.
+# Usage: ./phase1.sh [DISK] [USERNAME] [PASSWORD] [HOSTNAME]
+# Example: ./phase1.sh sda myuser mypassword myhostname
+
 echo "[info] Running phase1.sh version 2025-05-19-01"
 
 set -euo pipefail
@@ -23,6 +31,8 @@ DISK="/dev/${DISK}"
 echo "[+] Final disk selection: $DISK"
 
 echo "[*] Installing reflector and updating mirrorlist..."
+echo "[*] Installing and updating archlinux-keyring first to avoid PGP issues..."
+pacman -Sy --noconfirm archlinux-keyring
 pacman -Sy --noconfirm reflector
 reflector --country US --latest 10 --sort rate --protocol https --save /etc/pacman.d/mirrorlist
 
