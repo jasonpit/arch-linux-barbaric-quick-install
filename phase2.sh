@@ -1,67 +1,55 @@
 #!/bin/bash
-# Phase 2 Arch install script (run inside chroot)
-# JasonPit 2025
+# phase2.sh - Arch Linux system config (inside chroot)
+
 set -euo pipefail
 
-# Set essential variables
 TIMEZONE="America/Los_Angeles"
 LOCALE="en_US.UTF-8"
 KEYMAP="us"
 
-# You must export these into the environment when entering chroot or encode them directly in the script
-: "${USERNAME:?USERNAME not set}"
-: "${PASSWORD:?PASSWORD not set}"
-: "${HOSTNAME:?HOSTNAME not set}"
-
-echo "[*] Setting timezone to $TIMEZONE..."
-ln -sf /usr/share/zoneinfo/$TIMEZONE /etc/localtime
+echo "[*] Setting timezone..."
+ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
 hwclock --systohc
 
 echo "[*] Configuring locale..."
 echo "$LOCALE UTF-8" > /etc/locale.gen
 locale-gen
 echo "LANG=$LOCALE" > /etc/locale.conf
-echo "KEYMAP=$KEYMAP" > /etc/vconsole.conf
 
-echo "[*] Setting hostname to $HOSTNAME..."
+echo "[*] Setting hostname..."
 echo "$HOSTNAME" > /etc/hostname
-cat >> /etc/hosts <<EOF
-127.0.0.1 localhost
-::1       localhost
-127.0.1.1 $HOSTNAME.localdomain $HOSTNAME
-EOF
+echo "127.0.0.1 localhost" >> /etc/hosts
+echo "::1       localhost" >> /etc/hosts
+echo "127.0.1.1 $HOSTNAME.localdomain $HOSTNAME" >> /etc/hosts
 
 echo "[*] Setting root password..."
 echo "root:$PASSWORD" | chpasswd
 
-echo "[*] Creating user $USERNAME..."
-useradd -m -G wheel,audio,video -s /bin/bash "$USERNAME"
+echo "[*] Creating user '$USERNAME'..."
+id "$USERNAME" &>/dev/null || useradd -m -G wheel -s /bin/bash "$USERNAME"
 echo "$USERNAME:$PASSWORD" | chpasswd
-
-echo "[*] Enabling sudo for wheel group..."
 sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
 
-echo "[*] Enabling NetworkManager and SSH services..."
-systemctl enable NetworkManager
-systemctl enable sshd
+echo "[*] Enabling services..."
+systemctl enable NetworkManager || echo "⚠️  NetworkManager not found"
+systemctl enable sshd || echo "⚠️  sshd not found"
 
-echo "[*] Installing systemd-boot..."
+echo "[*] Installing bootloader..."
 bootctl --path=/boot install
 
-echo "[*] Creating boot loader entry..."
-ROOT_UUID=$(blkid -s PARTUUID -o value $(findmnt / -o SOURCE -n))
-cat > /boot/loader/loader.conf <<EOF
+echo "[*] Writing bootloader config..."
+cat > /boot/loader/loader.conf << EOF
 default arch
 timeout 3
 console-mode max
 editor no
 EOF
 
-cat > /boot/loader/entries/arch.conf <<EOF
+cat > /boot/loader/entries/arch.conf << EOF
 title   Arch Linux
 linux   /vmlinuz-linux
 initrd  /initramfs-linux.img
-options root=PARTUUID=$ROOT_UUID rw
+options root=PARTUUID=$(blkid -s PARTUUID -o value /dev/${DISK}p2) rw
 EOF
 
-echo "[*] Phase 2 complete. You can now exit and reboot."
+echo "[*] Phase 2 complete. You may now reboot."

@@ -1,63 +1,41 @@
 #!/bin/bash
-# phase2.sh - Arch Linux Post-Install Configuration
+# phase1.sh - Arch Linux base install and chroot trigger
 
 set -euo pipefail
 
-TIMEZONE="America/Los_Angeles"
-LOCALE="en_US.UTF-8"
-KEYMAP="us"
+# Required vars
+: "${USERNAME:?Missing USERNAME}"
+: "${PASSWORD:?Missing PASSWORD}"
+: "${HOSTNAME:?Missing HOSTNAME}"
+: "${DISK:?Missing DISK}"
 
-echo "[*] Setting timezone..."
-ln -sf "/usr/share/zoneinfo/$TIMEZONE" /etc/localtime
-hwclock --systohc
+echo "[*] Partitioning /dev/$DISK..."
+sgdisk --zap-all /dev/$DISK
+sgdisk -n 1::+512M -t 1:ef00 -c 1:EFI /dev/$DISK
+sgdisk -n 2::-0 -t 2:8300 -c 2:ROOT /dev/$DISK
+mkfs.fat -F32 /dev/${DISK}p1
+mkfs.ext4 /dev/${DISK}p2
 
-echo "[*] Configuring locale..."
-echo "$LOCALE UTF-8" > /etc/locale.gen
-locale-gen
-echo "LANG=$LOCALE" > /etc/locale.conf
+echo "[*] Mounting filesystems..."
+mount /dev/${DISK}p2 /mnt
+mkdir -p /mnt/boot
+mount /dev/${DISK}p1 /mnt/boot
 
-echo "[*] Setting hostname..."
-echo "$HOSTNAME" > /etc/hostname
-echo "127.0.0.1 localhost" >> /etc/hosts
-echo "::1       localhost" >> /etc/hosts
-echo "127.0.1.1 $HOSTNAME.localdomain $HOSTNAME" >> /etc/hosts
+echo "[*] Installing base system..."
+pacstrap /mnt base linux linux-firmware networkmanager openssh sudo grub efibootmgr
 
-echo "[*] Setting root password..."
-echo "root:$PASSWORD" | chpasswd
+echo "[*] Generating fstab..."
+genfstab -U /mnt >> /mnt/etc/fstab
 
-echo "[*] Creating user '$USERNAME'..."
-id "$USERNAME" &>/dev/null || useradd -m -G wheel -s /bin/bash "$USERNAME"
-echo "$USERNAME:$PASSWORD" | chpasswd
+echo "[*] Copying phase2.sh..."
+curl -L https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/main/phase2.sh -o /mnt/root/phase2.sh
+chmod +x /mnt/root/phase2.sh
 
-sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
+echo "[*] Preparing chroot..."
+for dir in /dev /proc /sys /run; do
+    mount --bind $dir /mnt$dir
+done
+mkdir -p /mnt/tmp && chmod 1777 /mnt/tmp
 
-if [ -f /usr/lib/systemd/system/NetworkManager.service ]; then
-  systemctl enable NetworkManager
-else
-  echo "⚠️ NetworkManager service not found; skipping."
-fi
-
-if [ -f /usr/lib/systemd/system/sshd.service ]; then
-  systemctl enable sshd
-else
-  echo "⚠️ sshd service not found; skipping."
-fi
-
-bootctl --path=/boot install
-
-echo "[*] Creating bootloader config..."
-cat > /boot/loader/loader.conf << EOF
-default arch
-timeout 3
-console-mode max
-editor no
-EOF
-
-cat > /boot/loader/entries/arch.conf << EOF
-  title   Arch Linux
-  linux   /vmlinuz-linux
-  initrd  /initramfs-linux.img
-  options root=PARTUUID=$(blkid -s PARTUUID -o value /dev/${DISK}p2) rw
-EOF
-
-echo "[*] Phase 2 complete. You may now reboot."
+echo "[*] Entering chroot and running phase2.sh..."
+arch-chroot /mnt /root/phase2.sh
