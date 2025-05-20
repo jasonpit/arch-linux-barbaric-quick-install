@@ -26,7 +26,7 @@ echo "[*] Setting root password..."
 echo "root:$PASSWORD" | chpasswd
 
 echo "[*] Creating user '$USERNAME'..."
-useradd -m -G wheel -s /bin/bash "$USERNAME"
+id "$USERNAME" &>/dev/null || useradd -m -G wheel -s /bin/bash "$USERNAME"
 echo "$USERNAME:$PASSWORD" | chpasswd
 
 sed -i 's/^# %wheel ALL=(ALL:ALL) ALL/%wheel ALL=(ALL:ALL) ALL/' /etc/sudoers
