@@ -1,4 +1,5 @@
 #!/bin/bash
+# # curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/setup-dev-machine.sh chmod +x setup-dev-machine.sh
 
 echo "📦 Installing daily driver packages..."
 
