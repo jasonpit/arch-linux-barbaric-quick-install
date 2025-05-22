@@ -36,6 +36,15 @@ if [[ "$DEV_MACHINE" == "true" ]]; then
 fi
 
 if [[ "$INSTALL_AUR" == "true" ]]; then
+    if ! command -v yay &>/dev/null; then
+        echo "Installing yay AUR helper..."
+        cd /opt
+        git clone https://aur.archlinux.org/yay.git
+        chown -R "$USERNAME:$USERNAME" yay
+        cd yay
+        sudo -u "$USERNAME" makepkg -si --noconfirm
+    fi
+
     echo "Installing AUR packages using yay..."
     yay -S --noconfirm --needed $AUR_PACKAGES
 fi
