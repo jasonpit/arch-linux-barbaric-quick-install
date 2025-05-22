@@ -1,4 +1,7 @@
 #!/bin/bash
+# This script installs a set of packages for a development machine on Arch Linux.
+# It includes packages for audio production, development tools, and extra utilities.
+# It also sets up yay for AUR package management and flatpak for additional software.   
 # # curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/setup-dev-machine.sh chmod +x setup-dev-machine.sh
 
 echo "📦 Installing daily driver packages..."
