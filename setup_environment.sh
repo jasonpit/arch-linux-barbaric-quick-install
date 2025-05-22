@@ -16,6 +16,16 @@ if $GUI; then
 
     if [[ "$ENVIRONMENT" == "kde" ]]; then
         GUI_PACKAGES="xorg-server plasma-meta konsole sddm"
+        AUDIO_PACKAGES="jack2 qjackctl carla a2jmidid pulseaudio pulseaudio-alsa rtkit pipewire pipewire-alsa pipewire-pulse wireplumber helvum easyeffects"
+        DEV_PACKAGES="git base-devel zsh tmux vim neovim docker docker-compose kubectl azure-cli aws-cli terraform openjdk gradle nodejs npm python python-pip go jq httpie"
+
+        EXTRA_TOOLS="neofetch htop btop unzip wget curl rsync lsof lshw net-tools inetutils nmap reflector pkgfile"
+
+        THEMES_AND_FONTS="papirus-icon-theme materia-gtk-theme arc-gtk-theme ttf-jetbrains-mono ttf-fira-code ttf-nerd-fonts-symbols noto-fonts noto-fonts-cjk noto-fonts-emoji"
+
+        BROWSERS_AND_GUI_TOOLS="firefox thunderbird filezilla libreoffice-fresh krita"
+
+        AUR_PACKAGES="google-chrome microsoft-edge-stable-bin visual-studio-code-bin teams-for-linux private-internet-access"
     elif [[ "$ENVIRONMENT" == "openbox" ]]; then
         GUI_PACKAGES="xorg-server openbox tint2 lxterminal lightdm lightdm-gtk-greeter"
     else
@@ -26,6 +36,23 @@ if $GUI; then
     if ! sudo pacman -Sy --noconfirm $GUI_PACKAGES; then
         echo "[!] Failed to install GUI packages. Exiting."
         exit 1
+    fi
+
+    if [[ "$ENVIRONMENT" == "kde" ]]; then
+        if ! sudo pacman -Sy --noconfirm $AUDIO_PACKAGES $DEV_PACKAGES $EXTRA_TOOLS $THEMES_AND_FONTS $BROWSERS_AND_GUI_TOOLS; then
+            echo "[!] Failed to install one or more core packages. Exiting."
+            exit 1
+        fi
+
+        if ! command -v yay &> /dev/null; then
+            echo "[*] Installing yay AUR helper..."
+            sudo pacman -S --noconfirm --needed git base-devel
+            git clone https://aur.archlinux.org/yay.git
+            cd yay && makepkg -si --noconfirm && cd .. && rm -rf yay
+        fi
+
+        echo "[*] Installing AUR packages with yay..."
+        yay -S --noconfirm --needed $AUR_PACKAGES
     fi
 
     if [[ "$ENVIRONMENT" == "openbox" ]]; then
@@ -76,6 +103,7 @@ fi
 # Summary messages indicating completion status based on GUI or headless mode
 if $GUI; then
     echo "[+] GUI setup complete. Reboot to launch LightDM and Openbox environment."
+    echo "[+] Audio, dev, and AUR packages installed. You're ready to build, route, and shred!"
 else
     echo "[*] Setup completed in headless mode."
 fi
