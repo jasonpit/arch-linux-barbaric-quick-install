@@ -10,10 +10,6 @@
 # Usage:
 #   curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/phase1.sh
 #   chmod +x phase1.sh
-#   export USERNAME=myuser
-#   export PASSWORD=mypass
-#   export HOSTNAME=myhost
-#   export DISK=nvme0n1
 #   ./phase1.sh
 #
 # Required environment variables:
@@ -26,11 +22,15 @@
 
 set -euo pipefail
 
-# Required vars
-: "${USERNAME:?Missing USERNAME}"
-: "${PASSWORD:?Missing PASSWORD}"
-: "${HOSTNAME:?Missing HOSTNAME}"
-: "${DISK:?Missing DISK}"
+# Interactive prompts for required variables
+read -rp "Enter username: " USERNAME
+read -rsp "Enter password for $USERNAME: " PASSWORD
+echo
+read -rp "Enter hostname: " HOSTNAME
+
+echo "[*] Available disks:"
+lsblk -d -o NAME,SIZE,MODEL
+read -rp "Enter target disk (e.g., nvme0n1): " DISK
 
 echo "[*] Partitioning /dev/$DISK..."
 # Wipe and repartition the disk with EFI and root partitions
