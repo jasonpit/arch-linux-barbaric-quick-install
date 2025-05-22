@@ -19,9 +19,9 @@
 # Now inside chroot:
 # # curl -LO https://raw.githubusercontent.com/jasonpit/arch-linux-barbaric-quick-install/master/phase2.sh chmod +x phase2.sh
 
-# export USERNAME=node
-# export PASSWORD=meat
-# export HOSTNAME=nodeos
+# export USERNAME=
+# export PASSWORD=
+# export HOSTNAME=
 # export DISK=nvme0n1
 # ./phase2.sh
 
